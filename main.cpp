@@ -46,6 +46,34 @@ void unloadImage(rgba** image, int height)
     delete[] image;
 }
 
+// save image to file
+void saveImage(const string& filename, rgba** image, int width, int height)
+{
+    CImg<unsigned char> dest(width, height, 1, 4);
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            dest(j, i, 0, 0) = image[i][j].red;
+            dest(j, i, 0, 1) = image[i][j].green;
+            dest(j, i, 0, 2) = image[i][j].blue;
+            dest(j, i, 0, 3) = image[i][j].alpha;
+        }
+    }
+    dest.save(filename.c_str());
+}
+
+void grayScale(rgba** image, int width, int height)
+{
+    // convert the image to grayscale
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            uint8_t gray = (image[i][j].red + image[i][j].green + image[i][j].blue) / 3;
+            image[i][j].red = gray;
+            image[i][j].green = gray;
+            image[i][j].blue = gray;
+        }
+    }
+}
+
 // Function to find bounding box for a given image
 boxList findBox(char* reference, char* image)
 {
@@ -55,6 +83,11 @@ boxList findBox(char* reference, char* image)
     int height;
 
     rgba** img = loadImage(image, &width, &height);
+    grayScale(img, width, height);
+
+    saveImage("patate.png", img, width, height);
+    
+
     box.push_back({ 0, 0, 100, 100 });
     box.push_back({ 0, 0, 100, 100 });
     
