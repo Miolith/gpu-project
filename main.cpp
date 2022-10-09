@@ -16,18 +16,18 @@ struct rgba {
     uint8_t alpha;
 };
 
-rgba** loadImage(const string& filename)
+rgba** loadImage(const string& filename, int* width, int* height)
 {
     // load the image from path into the rgba array
     CImg<unsigned char> src(filename.c_str());
-    int width = src.width();
-    int height = src.height();
-    unsigned char* ptr = src.data(10,10); // get pointer to pixel @ 10,10
-    unsigned char pixel = *ptr;
-    rgba** image = new rgba*[height];
-    for (int i = 0; i < height; i++) {
-        image[i] = new rgba[width];
-        for (int j = 0; j < width; j++) {
+    *width = src.width();
+    *height = src.height();
+
+    rgba** image = new rgba*[*height];
+
+    for (int i = 0; i < *height; i++) {
+        image[i] = new rgba[*width];
+        for (int j = 0; j < *width; j++) {
             image[i][j].red = src(j, i, 0, 0);
             image[i][j].green = src(j, i, 0, 1);
             image[i][j].blue = src(j, i, 0, 2);
@@ -37,14 +37,29 @@ rgba** loadImage(const string& filename)
     return image;
 }
 
+void unloadImage(rgba** image, int height)
+{
+    // delete the image array
+    for (int i = 0; i < height; i++) {
+        delete[] image[i];
+    }
+    delete[] image;
+}
 
 // Function to find bounding box for a given image
 boxList findBox(char* reference, char* image)
 {
     boxList box;
-    rgba** img = loadImage(image);
+
+    int width;
+    int height;
+
+    rgba** img = loadImage(image, &width, &height);
     box.push_back({ 0, 0, 100, 100 });
     box.push_back({ 0, 0, 100, 100 });
+    
+    unloadImage(img, height);
+
     return box;
 }
 
