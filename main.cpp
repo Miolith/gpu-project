@@ -61,6 +61,61 @@ void saveImage(const string& filename, rgba** image, int width, int height)
     dest.save(filename.c_str());
 }
 
+// smooth the image with gaussian filter
+void gaussianBlur(rgba** image, int width, int height)
+{
+    // create a new image to store the result
+    rgba** newImage = new rgba*[height];
+    for (int i = 0; i < height; i++) {
+        newImage[i] = new rgba[width];
+    }
+
+    // gaussian filter
+    float filter[3][3] = { { 1.0 / 16, 2.0 / 16, 1.0 / 16 },
+                           { 2.0 / 16, 4.0 / 16, 2.0 / 16 },
+                           { 1.0 / 16, 2.0 / 16, 1.0 / 16 } };
+
+    // apply filter to each pixel
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            float red = 0.0;
+            float green = 0.0;
+            float blue = 0.0;
+            float alpha = 0.0;
+            for (int k = -1; k <= 1; k++) {
+                for (int l = -1; l <= 1; l++) {
+                    if (i + k >= 0 && i + k < height && j + l >= 0 && j + l < width) {
+                        red += image[i + k][j + l].red * filter[k + 1][l + 1];
+                        green += image[i + k][j + l].green * filter[k + 1][l + 1];
+                        blue += image[i + k][j + l].blue * filter[k + 1][l + 1];
+                        alpha += image[i + k][j + l].alpha * filter[k + 1][l + 1];
+                    }
+                }
+            }
+            newImage[i][j].red = red;
+            newImage[i][j].green = green;
+            newImage[i][j].blue = blue;
+            newImage[i][j].alpha = alpha;
+        }
+    }
+
+    // copy the result back to the original image
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            image[i][j].red = newImage[i][j].red;
+            image[i][j].green = newImage[i][j].green;
+            image[i][j].blue = newImage[i][j].blue;
+            image[i][j].alpha = newImage[i][j].alpha;
+        }
+    }
+
+    // delete newImage
+    for (int i = 0; i < height; i++) {
+        delete[] newImage[i];
+    }
+    delete[] newImage;
+}
+
 void grayScale(rgba** image, int width, int height)
 {
     // convert the image to grayscale
@@ -84,6 +139,7 @@ boxList findBox(char* reference, char* image)
 
     rgba** img = loadImage(image, &width, &height);
     grayScale(img, width, height);
+    gaussianBlur(img, width, height);
 
     saveImage("patate.png", img, width, height);
     
