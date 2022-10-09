@@ -2,15 +2,47 @@
 #include<map>
 #include<string>
 #include<iostream>
+#include "CImg.h"
 
 using namespace std;
+using namespace cimg_library;
 using boxList = vector<vector<int>>;
 using boxMap = map<string, boxList>;
+
+struct rgba {
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    uint8_t alpha;
+};
+
+rgba** loadImage(const string& filename)
+{
+    // load the image from path into the rgba array
+    CImg<unsigned char> src(filename.c_str());
+    int width = src.width();
+    int height = src.height();
+    unsigned char* ptr = src.data(10,10); // get pointer to pixel @ 10,10
+    unsigned char pixel = *ptr;
+    rgba** image = new rgba*[height];
+    for (int i = 0; i < height; i++) {
+        image[i] = new rgba[width];
+        for (int j = 0; j < width; j++) {
+            image[i][j].red = src(j, i, 0, 0);
+            image[i][j].green = src(j, i, 0, 1);
+            image[i][j].blue = src(j, i, 0, 2);
+            image[i][j].alpha = src(j, i, 0, 3);
+        }
+    }
+    return image;
+}
+
 
 // Function to find bounding box for a given image
 boxList findBox(char* reference, char* image)
 {
     boxList box;
+    rgba** img = loadImage(image);
     box.push_back({ 0, 0, 100, 100 });
     box.push_back({ 0, 0, 100, 100 });
     return box;
