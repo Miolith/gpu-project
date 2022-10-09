@@ -9,7 +9,8 @@ using namespace cimg_library;
 using boxList = vector<vector<int>>;
 using boxMap = map<string, boxList>;
 
-struct rgba {
+struct rgba
+{
     uint8_t red;
     uint8_t green;
     uint8_t blue;
@@ -25,9 +26,11 @@ rgba** loadImage(const string& filename, int* width, int* height)
 
     rgba** image = new rgba*[*height];
 
-    for (int i = 0; i < *height; i++) {
+    for (int i = 0; i < *height; i++)
+    {
         image[i] = new rgba[*width];
-        for (int j = 0; j < *width; j++) {
+        for (int j = 0; j < *width; j++)
+        {
             image[i][j].red = src(j, i, 0, 0);
             image[i][j].green = src(j, i, 0, 1);
             image[i][j].blue = src(j, i, 0, 2);
@@ -50,8 +53,10 @@ void unloadImage(rgba** image, int height)
 void saveImage(const string& filename, rgba** image, int width, int height)
 {
     CImg<unsigned char> dest(width, height, 1, 4);
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
             dest(j, i, 0, 0) = image[i][j].red;
             dest(j, i, 0, 1) = image[i][j].green;
             dest(j, i, 0, 2) = image[i][j].blue;
@@ -66,7 +71,8 @@ void gaussianBlur(rgba** image, int width, int height)
 {
     // create a new image to store the result
     rgba** newImage = new rgba*[height];
-    for (int i = 0; i < height; i++) {
+    for (int i = 0; i < height; i++)
+    {
         newImage[i] = new rgba[width];
     }
 
@@ -76,15 +82,20 @@ void gaussianBlur(rgba** image, int width, int height)
                            { 1.0 / 16, 2.0 / 16, 1.0 / 16 } };
 
     // apply filter to each pixel
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
             float red = 0.0;
             float green = 0.0;
             float blue = 0.0;
             float alpha = 0.0;
-            for (int k = -1; k <= 1; k++) {
-                for (int l = -1; l <= 1; l++) {
-                    if (i + k >= 0 && i + k < height && j + l >= 0 && j + l < width) {
+            for (int k = -1; k <= 1; k++)
+            {
+                for (int l = -1; l <= 1; l++)
+                {
+                    if (i + k >= 0 && i + k < height && j + l >= 0 && j + l < width)
+                    {
                         red += image[i + k][j + l].red * filter[k + 1][l + 1];
                         green += image[i + k][j + l].green * filter[k + 1][l + 1];
                         blue += image[i + k][j + l].blue * filter[k + 1][l + 1];
@@ -100,8 +111,10 @@ void gaussianBlur(rgba** image, int width, int height)
     }
 
     // copy the result back to the original image
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
             image[i][j].red = newImage[i][j].red;
             image[i][j].green = newImage[i][j].green;
             image[i][j].blue = newImage[i][j].blue;
@@ -110,17 +123,16 @@ void gaussianBlur(rgba** image, int width, int height)
     }
 
     // delete newImage
-    for (int i = 0; i < height; i++) {
-        delete[] newImage[i];
-    }
-    delete[] newImage;
+    unloadImage(newImage, height);
 }
 
 void grayScale(rgba** image, int width, int height)
 {
     // convert the image to grayscale
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
             uint8_t gray = (image[i][j].red + image[i][j].green + image[i][j].blue) / 3;
             image[i][j].red = gray;
             image[i][j].green = gray;
@@ -143,7 +155,6 @@ boxList findBox(char* reference, char* image)
 
     saveImage("patate.png", img, width, height);
     
-
     box.push_back({ 0, 0, 100, 100 });
     box.push_back({ 0, 0, 100, 100 });
     
@@ -184,7 +195,8 @@ void printBoundingBoxes(boxMap boxes)
     cout << "}";
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     // mybin refencec.png image1.png ...
     boxMap boxes = findBoundingBoxes(argv[1], argc - 2, argv + 2);
     
