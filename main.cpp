@@ -1,9 +1,9 @@
-#include <iostream>
-#include <assert.h>
 #include <algorithm>
+#include <assert.h>
+#include <iostream>
 
-#include "draw.h"
 #include "CImg.h"
+#include "draw.h"
 
 using namespace std;
 using namespace cimg_library;
@@ -70,13 +70,14 @@ void imageDiff(rgba **imageRef, rgba **imageOther, int width, int height)
     {
         for (size_t j = 0; j < width; j++)
         {
-            imageOther[i][j].red = abs(imageOther[i][j].red - imageRef[i][j].red);
-            imageOther[i][j].blue = abs(imageOther[i][j].blue - imageRef[i][j].blue);
-            imageOther[i][j].green = abs(imageOther[i][j].green - imageRef[i][j].green);
+            imageOther[i][j].red =
+                abs(imageOther[i][j].red - imageRef[i][j].red);
+            imageOther[i][j].blue =
+                abs(imageOther[i][j].blue - imageRef[i][j].blue);
+            imageOther[i][j].green =
+                abs(imageOther[i][j].green - imageRef[i][j].green);
         }
-         
     }
-    
 }
 
 // smooth the image with gaussian filter
@@ -158,7 +159,30 @@ void grayScale(rgba **image, int width, int height)
     }
 }
 
-void erosion(rgba **image, int height, int width, int precision)
+bool **getCircleTable(int radius)
+{
+    int new_y = radius / 2;
+    int new_x = radius / 2;
+
+    int squaredRadius = (radius / 2) * (radius / 2);
+    bool **circleTable = new bool *[radius + 1];
+    for (int i = 0; i <= radius; i++)
+    {
+        circleTable[i] = new bool[radius + 1];
+    }
+    for (int yoffset = -new_y; yoffset <= new_y; yoffset++)
+    {
+        for (int xoffset = -new_x; xoffset <= new_x; xoffset++)
+        {
+            circleTable[yoffset + new_y][xoffset + new_x] =
+                (pow(xoffset, 2) + pow(yoffset, 2)) > squaredRadius;
+        }
+    }
+
+    return circleTable;
+}
+
+void dilation(rgba **image, int height, int width, int precision)
 {
     // create a new image to store the result
     rgba **newImage = new rgba *[height];
@@ -167,18 +191,23 @@ void erosion(rgba **image, int height, int width, int precision)
         newImage[i] = new rgba[width];
     }
 
-    for(int y = 0; y < height; y++)
+    bool **circleTable = getCircleTable(2 * precision);
+
+    for (int y = 0; y < height; y++)
     {
-        for(int x = 0; x < width; x++)
+        for (int x = 0; x < width; x++)
         {
             uint8_t maxi = 0;
-            for(int yoffset = -precision; yoffset <= precision; yoffset++)
+            for (int yoffset = -precision; yoffset <= precision; yoffset++)
             {
-                for(int xoffset = -precision; xoffset <= precision; xoffset++)
+                for (int xoffset = -precision; xoffset <= precision; xoffset++)
                 {
                     int new_y = y + yoffset;
                     int new_x = x + xoffset;
-                    if(new_y < 0 || new_y >= height || new_x < 0 || new_x >= width)
+                    if (new_y < 0 || new_y >= height || new_x < 0
+                        || new_x >= width
+                        || circleTable[yoffset + precision]
+                                      [xoffset + precision])
                         continue;
 
                     maxi = max(image[new_y][new_x].red, maxi);
@@ -195,7 +224,7 @@ void erosion(rgba **image, int height, int width, int precision)
             image[i][j].red = newImage[i][j].red;
             image[i][j].green = newImage[i][j].red;
             image[i][j].blue = newImage[i][j].red;
-            //image[i][j].alpha = newImage[i][j].alpha;
+            // image[i][j].alpha = newImage[i][j].alpha;
         }
     }
 
@@ -203,7 +232,7 @@ void erosion(rgba **image, int height, int width, int precision)
     unloadImage(newImage, height);
 }
 
-void dilation(rgba **image, int height, int width, int precision)
+void erosion(rgba **image, int height, int width, int precision)
 {
     // create a new image to store the result
     rgba **newImage = new rgba *[height];
@@ -212,18 +241,23 @@ void dilation(rgba **image, int height, int width, int precision)
         newImage[i] = new rgba[width];
     }
 
-    for(int y = 0; y < height; y++)
+    bool **circleTable = getCircleTable(2 * precision);
+
+    for (int y = 0; y < height; y++)
     {
-        for(int x = 0; x < width; x++)
+        for (int x = 0; x < width; x++)
         {
             uint8_t mini = 255;
-            for(int yoffset = -precision; yoffset <= precision; yoffset++)
+            for (int yoffset = -precision; yoffset <= precision; yoffset++)
             {
-                for(int xoffset = -precision; xoffset <= precision; xoffset++)
+                for (int xoffset = -precision; xoffset <= precision; xoffset++)
                 {
                     int new_y = y + yoffset;
                     int new_x = x + xoffset;
-                    if(new_y < 0 || new_y >= height || new_x < 0 || new_x >= width)
+                    if (new_y < 0 || new_y >= height || new_x < 0
+                        || new_x >= width
+                        || circleTable[yoffset + precision]
+                                      [xoffset + precision])
                         continue;
 
                     mini = min(image[new_y][new_x].red, mini);
@@ -240,7 +274,7 @@ void dilation(rgba **image, int height, int width, int precision)
             image[i][j].red = newImage[i][j].red;
             image[i][j].green = newImage[i][j].red;
             image[i][j].blue = newImage[i][j].red;
-            //image[i][j].alpha = newImage[i][j].alpha;
+            // image[i][j].alpha = newImage[i][j].alpha;
         }
     }
 
@@ -260,13 +294,17 @@ boxList findBox(char *reference, char *image)
     rgba **img = loadImage(image, &width, &height);
     rgba **ref = loadImage(reference, &w, &h);
     grayScale(img, width, height);
-    grayScale(ref, w, h);
+    grayScale(ref, w, h); // TODO: put them out of findBox for opti
     gaussianBlur(img, width, height);
+    gaussianBlur(ref, w, h); // TODO: put them out of findBox for opti
     assert(w == width && h == height);
     imageDiff(ref, img, width, height);
+    // Fermeture
     dilation(img, height, width, 20);
     erosion(img, height, width, 20);
-
+    // Ouverture
+    erosion(img, height, width, 50);
+    dilation(img, height, width, 50);
     saveImage("patate.png", img, width, height);
 
     box.push_back({ 0, 0, 100, 100 });
@@ -316,7 +354,8 @@ int main(int argc, char **argv)
     if (argc < 3)
     {
         cout << "Usage :\n"
-             << argv[0] << " backgroundImage ImagePath [ImagePath]+" << endl << "\n";
+             << argv[0] << " backgroundImage ImagePath [ImagePath]+" << endl
+             << "\n";
         return 0;
     }
     // mybin refencec.png image1.png ...
