@@ -7,6 +7,7 @@ EXEC_NAME=main
 # Check System for OSX Comptability Support
 OS=$(shell uname)
 
+
 all: $(EXEC_NAME)
 
 $(EXEC_NAME):
@@ -15,3 +16,11 @@ ifeq ($(OS),Darwin) # OSX
 else # Other
 	g++ $(SRC) $(CPPFLAGS) -o $@
 endif
+
+
+debug: CPPFLAGS += -g -fsanitize=address
+debug: $(EXEC_NAME)
+
+clean:
+	-rm $(EXEC_NAME)
+
