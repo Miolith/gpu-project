@@ -1,22 +1,10 @@
 #include <iostream>
-#include <map>
-#include <string>
-#include <vector>
 
+#include "draw.h"
 #include "CImg.h"
 
 using namespace std;
 using namespace cimg_library;
-using boxList = vector<vector<int>>;
-using boxMap = map<string, boxList>;
-
-struct rgba
-{
-    uint8_t red;
-    uint8_t green;
-    uint8_t blue;
-    uint8_t alpha;
-};
 
 rgba **loadImage(const string &filename, int *width, int *height)
 {
@@ -34,6 +22,7 @@ rgba **loadImage(const string &filename, int *width, int *height)
         {
             uint8_t *fields[4] = { &image[i][j].red, &image[i][j].green,
                                    &image[i][j].blue, &image[i][j].alpha };
+            image[i][j].alpha = 255;
             for (int spec = 0; spec < src.spectrum(); spec++)
             {
                 *(fields[spec]) = src(j, i, 0, spec);
