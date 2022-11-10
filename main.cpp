@@ -1,4 +1,6 @@
 #include <iostream>
+#include <assert.h>
+#include <algorithm>
 
 #include "draw.h"
 #include "CImg.h"
@@ -59,6 +61,22 @@ void saveImage(const string &filename, rgba **image, int width, int height)
         }
     }
     dest.save(filename.c_str());
+}
+
+// difference between two images
+void imageDiff(rgba **imageRef, rgba **imageOther, int width, int height)
+{
+    for (size_t i = 0; i < height; i++)
+    {
+        for (size_t j = 0; j < width; j++)
+        {
+            imageOther[i][j].red = abs(imageOther[i][j].red - imageRef[i][j].red);
+            imageOther[i][j].blue = abs(imageOther[i][j].blue - imageRef[i][j].blue);
+            imageOther[i][j].green = abs(imageOther[i][j].green - imageRef[i][j].green);
+        }
+         
+    }
+    
 }
 
 // smooth the image with gaussian filter
@@ -140,6 +158,96 @@ void grayScale(rgba **image, int width, int height)
     }
 }
 
+void erosion(rgba **image, int height, int width, int precision)
+{
+    // create a new image to store the result
+    rgba **newImage = new rgba *[height];
+    for (int i = 0; i < height; i++)
+    {
+        newImage[i] = new rgba[width];
+    }
+
+    for(int y = 0; y < height; y++)
+    {
+        for(int x = 0; x < width; x++)
+        {
+            uint8_t maxi = 0;
+            for(int yoffset = -precision; yoffset <= precision; yoffset++)
+            {
+                for(int xoffset = -precision; xoffset <= precision; xoffset++)
+                {
+                    int new_y = y + yoffset;
+                    int new_x = x + xoffset;
+                    if(new_y < 0 || new_y >= height || new_x < 0 || new_x >= width)
+                        continue;
+
+                    maxi = max(image[new_y][new_x].red, maxi);
+                }
+            }
+            newImage[y][x].red = maxi;
+        }
+    }
+    // copy the result back to the original image
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            image[i][j].red = newImage[i][j].red;
+            image[i][j].green = newImage[i][j].red;
+            image[i][j].blue = newImage[i][j].red;
+            //image[i][j].alpha = newImage[i][j].alpha;
+        }
+    }
+
+    // delete newImage
+    unloadImage(newImage, height);
+}
+
+void dilation(rgba **image, int height, int width, int precision)
+{
+    // create a new image to store the result
+    rgba **newImage = new rgba *[height];
+    for (int i = 0; i < height; i++)
+    {
+        newImage[i] = new rgba[width];
+    }
+
+    for(int y = 0; y < height; y++)
+    {
+        for(int x = 0; x < width; x++)
+        {
+            uint8_t mini = 255;
+            for(int yoffset = -precision; yoffset <= precision; yoffset++)
+            {
+                for(int xoffset = -precision; xoffset <= precision; xoffset++)
+                {
+                    int new_y = y + yoffset;
+                    int new_x = x + xoffset;
+                    if(new_y < 0 || new_y >= height || new_x < 0 || new_x >= width)
+                        continue;
+
+                    mini = min(image[new_y][new_x].red, mini);
+                }
+            }
+            newImage[y][x].red = mini;
+        }
+    }
+    // copy the result back to the original image
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            image[i][j].red = newImage[i][j].red;
+            image[i][j].green = newImage[i][j].red;
+            image[i][j].blue = newImage[i][j].red;
+            //image[i][j].alpha = newImage[i][j].alpha;
+        }
+    }
+
+    // delete newImage
+    unloadImage(newImage, height);
+}
+
 // Function to find bounding box for a given image
 boxList findBox(char *reference, char *image)
 {
@@ -147,10 +255,17 @@ boxList findBox(char *reference, char *image)
 
     int width;
     int height;
+    int w, h;
 
     rgba **img = loadImage(image, &width, &height);
+    rgba **ref = loadImage(reference, &w, &h);
     grayScale(img, width, height);
+    grayScale(ref, w, h);
     gaussianBlur(img, width, height);
+    assert(w == width && h == height);
+    imageDiff(ref, img, width, height);
+    dilation(img, height, width, 20);
+    erosion(img, height, width, 20);
 
     saveImage("patate.png", img, width, height);
 
@@ -158,6 +273,7 @@ boxList findBox(char *reference, char *image)
     box.push_back({ 0, 0, 100, 100 });
 
     unloadImage(img, height);
+    unloadImage(ref, h);
 
     return box;
 }
@@ -192,7 +308,7 @@ void printBoundingBoxes(boxMap boxes)
         if (it != prev(boxes.end()))
             cout << ",";
     }
-    cout << "}";
+    cout << "}\n";
 }
 
 int main(int argc, char **argv)
@@ -200,7 +316,7 @@ int main(int argc, char **argv)
     if (argc < 3)
     {
         cout << "Usage :\n"
-             << argv[0] << " backgroundImage ImagePath [ImagePath]+" << endl;
+             << argv[0] << " backgroundImage ImagePath [ImagePath]+" << endl << "\n";
         return 0;
     }
     // mybin refencec.png image1.png ...
