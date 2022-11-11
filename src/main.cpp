@@ -29,10 +29,10 @@ boxList findBox(char *reference, char *image)
     // Ouverture
     erosion(img, height, width, 50);
     dilation(img, height, width, 50);
+    basic_threshold(img, height, width, 127);
     saveImage("patate.png", img, width, height);
 
-    box.push_back({ 0, 0, 100, 100 });
-    box.push_back({ 0, 0, 100, 100 });
+    box.push_back(basic_box_detection(img, width, height));
 
     unloadImage(img, height);
     unloadImage(ref, h);

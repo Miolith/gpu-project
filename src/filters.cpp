@@ -198,4 +198,26 @@ void erosion(rgba **image, int height, int width, int precision)
     freeCircleTable(circleTable, 2 * precision);
 }
 
-
+void basic_threshold(rgba **image, int height, int width, uint8_t threshold)
+{
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            if(image[i][j].red >= threshold)
+            {
+                image[i][j].red = 255;
+                image[i][j].green = 255;
+                image[i][j].blue = 255;
+                image[i][j].alpha = 255;
+            }
+            else
+            {
+                image[i][j].red = 0;
+                image[i][j].green = 0;
+                image[i][j].blue = 0;
+                image[i][j].alpha = 255;
+            }
+        }
+    }
+}

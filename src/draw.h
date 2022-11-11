@@ -37,5 +37,10 @@ rgba **loadImage(const string &filename, int *width, int *height);
 void unloadImage(rgba **image, int height);
 
 void saveImage(const string &filename, rgba **image, int width, int height);
+
+void basic_threshold(rgba **image, int height, int width, uint8_t threshold);
+
+std::vector<int> basic_box_detection(rgba **image, int width, int height);
+
 #endif
 
