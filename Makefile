@@ -1,7 +1,7 @@
 CC=gcc
 CPPFLAGS=-O2 -L/usr/X11R6/lib -lm -lpthread -lX11 
 COMPFLAGS=-std=c++11
-SRC=main.cpp
+SRC=src/*.cpp
 EXEC_NAME=main
 
 # Check System for OSX Comptability Support
