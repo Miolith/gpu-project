@@ -21,7 +21,7 @@ std::vector<int> basic_box_detection(rgba **image, int width, int height)
             {
                 if(Xmin > x)
                     Xmin = x;
-                if(Ymin > x)
+                if(Ymin > y)
                     Ymin = y;
                 if(Xmax < x)
                     Xmax = x;
