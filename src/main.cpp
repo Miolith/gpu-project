@@ -30,6 +30,8 @@ boxList findBox(char *reference, char *image)
     erosion(img, height, width, 50);
     dilation(img, height, width, 50);
     basic_threshold(img, height, width, 127);
+    vector<vector<int>> labels = connectCompenent(img, height, width);
+
     saveImage("patate.png", img, width, height);
 
     box.push_back(basic_box_detection(img, width, height));

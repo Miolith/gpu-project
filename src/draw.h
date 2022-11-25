@@ -42,5 +42,7 @@ void basic_threshold(rgba **image, int height, int width, uint8_t threshold);
 
 std::vector<int> basic_box_detection(rgba **image, int width, int height);
 
+vector<vector<int>> connectCompenent(rgba** img, int height, int width);
+
 #endif
 

@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <iostream>
+#include <set>
 
 #include "CImg.h"
 #include "draw.h"
@@ -14,9 +15,9 @@ using namespace cimg_library;
  */
 void imageDiff(rgba **imageRef, rgba **imageOther, int width, int height)
 {
-    for (size_t i = 0; i < height; i++)
+    for (int i = 0; i < height; i++)
     {
-        for (size_t j = 0; j < width; j++)
+        for (int j = 0; j < width; j++)
         {
             imageOther[i][j].red =
                 abs(imageOther[i][j].red - imageRef[i][j].red);
@@ -220,4 +221,67 @@ void basic_threshold(rgba **image, int height, int width, uint8_t threshold)
             }
         }
     }
+}
+
+// connected component labeling Two Pass Algorithm
+vector<vector<int>> connectCompenent(rgba** img, int height, int width)
+{
+    vector<vector<int>> label = vector<vector<int>>(height, vector<int>(width, 0));
+
+    // list of links
+    vector<set<int>> link = vector<set<int>>(1, set<int>());
+
+    int nextLabel = 1;
+
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            if (img[i][j].red == 255)
+            {
+                set<int> label_set;
+
+                for (int n_i = i - 1; n_i <= i + 1; n_i++)
+                {
+                    for (int n_j = j - 1; n_j <= j + 1; n_j++)
+                    {
+                        if (n_j < 0 || n_i < 0 || n_i >= height || n_j >= width || (n_i == i && n_j == j))
+                            continue;
+
+                        if (label[n_i][n_j] != 0)
+                        {
+                            label_set.insert(label[n_i][n_j]);
+                        }
+                    }
+                }
+
+                if (label_set.empty())
+                {
+                    link.push_back(set<int>());
+                    link[nextLabel].insert(nextLabel);
+                    label[i][j] = nextLabel;
+                    nextLabel++;
+                }
+                else
+                {
+                    label[i][j] = *min_element(label_set.begin(), label_set.end());
+                    for (auto it = label_set.begin(); it != label_set.end(); it++)
+                    {
+                        link[*it].insert(label_set.begin(), label_set.end());
+                    }
+                }
+            }
+        }
+    } 
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            if (label[i][j] != 0)
+            {
+                label[i][j] = *min_element(link[label[i][j]].begin(), link[label[i][j]].end());
+            }
+        }
+    }
+    return label;
 }
