@@ -1,5 +1,5 @@
 CC=gcc
-CPPFLAGS=-O2 -L/usr/X11R6/lib -lm -lpthread -lX11 -Werror -pedantic -Wall -Wextra
+CPPFLAGS=-L/usr/X11R6/lib -lm -lpthread -lX11 -pedantic -Wall -Wextra
 COMPFLAGS=-std=c++11
 SRC=src/*.cpp
 EXEC_NAME=./main
@@ -10,6 +10,7 @@ OS=$(shell uname)
 
 all: $(EXEC_NAME)
 
+$(EXEC_NAME): CPPFLAGS += -O2
 $(EXEC_NAME):
 ifeq ($(OS),Darwin) # OSX
 	g++ $(SRC) $(COMPFLAGS) $(CPPFLAGS) -o $@
@@ -20,7 +21,7 @@ endif
 run:
 	$(EXEC_NAME) images/*
 
-debug: CPPFLAGS += -g -fsanitize=address
+debug: CPPFLAGS += -g #-fsanitize=address
 debug: $(EXEC_NAME)
 
 clean:

@@ -29,13 +29,23 @@ boxList findBox(char *reference, char *image)
     // Ouverture
     erosion(img, height, width, 50);
     dilation(img, height, width, 50);
-    basic_threshold(img, height, width, 127);
-    vector<vector<int>> labels = connectCompenent(img, height, width);
+    
+    saveImage("patate_nothresh.png", img, width, height);
+    basic_threshold(img, height, width, 50);
+    
+    saveImage("patate_afterthresh.png", img, width, height);
+    int size = 0;
+    vector<vector<int>> labels = connectCompenent(img, height, width, size);
+    
+    show_components(img, labels, width, height, size);
+    saveImage("patate_color.png", img, width, height);
 
-    saveImage("patate.png", img, width, height);
+    //box.push_back(basic_box_detection(img, width, height));
 
-    box.push_back(basic_box_detection(img, width, height));
-
+    for(auto boxe: component_box_detection(labels, width, height, size))
+    {
+        box.push_back(boxe);
+    }
     unloadImage(img, height);
     unloadImage(ref, h);
 

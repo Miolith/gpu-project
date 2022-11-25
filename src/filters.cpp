@@ -224,7 +224,7 @@ void basic_threshold(rgba **image, int height, int width, uint8_t threshold)
 }
 
 // connected component labeling Two Pass Algorithm
-vector<vector<int>> connectCompenent(rgba** img, int height, int width)
+vector<vector<int>> connectCompenent(rgba** img, int height, int width, int& Labelnum)
 {
     vector<vector<int>> label = vector<vector<int>>(height, vector<int>(width, 0));
 
@@ -237,6 +237,7 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width)
     {
         for (int j = 0; j < width; j++)
         {
+
             if (img[i][j].red == 255)
             {
                 set<int> label_set;
@@ -283,5 +284,6 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width)
             }
         }
     }
+    Labelnum = nextLabel;
     return label;
 }
