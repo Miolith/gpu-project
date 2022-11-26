@@ -39,7 +39,7 @@ void show_components(rgba **img, vector<vector<int>> comp, int width,
 {
     int slice = 360 / (components_nb);
     HSL rainbow(100, 1, 0.5);
-    for (int i = 1; i < components_nb; i++)
+    for (int i = 1; i <= components_nb; i++)
     {
         for (int y = 0; y < height; y++)
         {
@@ -62,7 +62,7 @@ component_box_detection(vector<vector<int>> components, int width, int height,
                         int components_nb)
 {
     std::vector<vector<int>> results;
-    for (int i = 1; i < components_nb; i++)
+    for (int i = 1; i <= components_nb; i++)
     {
         int Xmin = width, Xmax = 0, Ymin = height, Ymax = 0;
         for (int y = 0; y < height; y++)

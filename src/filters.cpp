@@ -317,12 +317,17 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width, int& Lab
                 }
             }
         }
-    } 
+    }
+
+    Labelnum = 0;
+
     for (int i = 0; i < height; i++)
         for (int j = 0; j < width; j++)
             if (label[i][j] != 0)
+            {
                 label[i][j] = disjoint_set.find(label[i][j]);
+                Labelnum = max(Labelnum, label[i][j]);
+            }
 
-    Labelnum = nextLabel;
     return label;
 }

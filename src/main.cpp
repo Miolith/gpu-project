@@ -31,7 +31,7 @@ boxList findBox(char *reference, char *image)
     dilation(img, height, width, 50);
     
     saveImage("patate_nothresh.png", img, width, height);
-    basic_threshold(img, height, width, 50);
+    basic_threshold(img, height, width, 80);
     
     saveImage("patate_afterthresh.png", img, width, height);
     int size = 0;
