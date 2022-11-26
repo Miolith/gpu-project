@@ -47,3 +47,8 @@ component_box_detection(vector<vector<int>> components, int width, int height,
                         set<int> &labelSet);
 
 void show_components(rgba** img, vector<vector<int>> comp, int width, int height, set<int> &labelSet);
+
+
+// GPU functions
+
+void grayScaleGPU(rgba **image, int width, int height);

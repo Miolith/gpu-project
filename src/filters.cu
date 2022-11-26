@@ -91,7 +91,6 @@ void gaussianBlur(rgba **image, int width, int height)
 
 void grayScale(rgba **image, int width, int height)
 {
-    // convert the image to grayscale
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
@@ -105,6 +104,37 @@ void grayScale(rgba **image, int width, int height)
     }
 }
 
+__global__ void grayScaleKernel(rgba *image, int width, int height)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x < width && y < height)
+    {
+        int index = y * width + x;
+        uint8_t gray =
+            (image[index].red + image[index].green + image[index].blue) / 3;
+        image[index].red = gray;
+        image[index].green = gray;
+        image[index].blue = gray;
+    }
+}
+// call gray scale kernel
+void grayScaleGPU(rgba **image, int width, int height)
+{
+    rgba *d_image;
+    int size = width * height * sizeof(rgba);
+    cudaMalloc(&d_image, size);
+    cudaMemcpy(d_image, *image, size, cudaMemcpyHostToDevice);
+
+    dim3 threadsPerBlock(32, 32);
+    dim3 numBlocks((width + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                   (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+    grayScaleKernel<<<numBlocks, threadsPerBlock>>>(d_image, width, height);
+
+    cudaMemcpy(*image, d_image, size, cudaMemcpyDeviceToHost);
+    cudaFree(d_image);
+}
 
 
 void dilation(rgba **image, int height, int width, int precision)
