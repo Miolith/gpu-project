@@ -1,9 +1,9 @@
-#ifndef DRAW_H
-#define DRAW_H
+#pragma once
 
 #include <map>
 #include <string>
 #include <vector>
+#include <set>
 
 
 struct rgba
@@ -40,15 +40,10 @@ void saveImage(const string &filename, rgba **image, int width, int height);
 
 void basic_threshold(rgba **image, int height, int width, uint8_t threshold);
 
-std::vector<int> basic_box_detection(rgba **image, int width, int height);
-
-vector<vector<int>> connectCompenent(rgba** img, int height, int width, int& Labelnum);
+vector<vector<int>> connectCompenent(rgba** img, int height, int width, set<int> &labelSet);
 
 std::vector<std::vector<int>>
 component_box_detection(vector<vector<int>> components, int width, int height,
-                        int components_nb);
+                        set<int> &labelSet);
 
-void show_components(rgba** img, vector<vector<int>> comp, int width, int height, int components_nb);
-
-#endif
-
+void show_components(rgba** img, vector<vector<int>> comp, int width, int height, set<int> &labelSet);

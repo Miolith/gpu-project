@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <iostream>
+#include <set>
 
 #include "CImg.h"
 #include "color.hh"
@@ -10,36 +11,12 @@
 using namespace std;
 using namespace cimg_library;
 
-std::vector<int> basic_box_detection(rgba **image, int width, int height)
-{
-    int Xmin = 255, Xmax = 0, Ymin = 255, Ymax = 0;
-
-    for (int y = 0; y < height; y++)
-    {
-        for (int x = 0; x < width; x++)
-        {
-            if (image[y][x].red == 255)
-            {
-                if (Xmin > x)
-                    Xmin = x;
-                if (Ymin > y)
-                    Ymin = y;
-                if (Xmax < x)
-                    Xmax = x;
-                if (Ymax < y)
-                    Ymax = y;
-            }
-        }
-    }
-    return std::vector<int>({ Xmin, Ymin, Xmax - Xmin, Ymax - Ymin });
-}
-
 void show_components(rgba **img, vector<vector<int>> comp, int width,
-                     int height, int components_nb)
+                     int height, set<int> &labelSet)
 {
-    int slice = 360 / (components_nb);
+    int slice = 360 / (labelSet.size());
     HSL rainbow(100, 1, 0.5);
-    for (int i = 1; i <= components_nb; i++)
+    for (auto i : labelSet)
     {
         for (int y = 0; y < height; y++)
         {
@@ -59,10 +36,10 @@ void show_components(rgba **img, vector<vector<int>> comp, int width,
 
 std::vector<std::vector<int>>
 component_box_detection(vector<vector<int>> components, int width, int height,
-                        int components_nb)
+                        set<int> &labelSet)
 {
     std::vector<vector<int>> results;
-    for (int i = 1; i <= components_nb; i++)
+    for (auto i : labelSet)
     {
         int Xmin = width, Xmax = 0, Ymin = height, Ymax = 0;
         for (int y = 0; y < height; y++)
@@ -71,14 +48,10 @@ component_box_detection(vector<vector<int>> components, int width, int height,
             {
                 if (components[y][x] == i)
                 {
-                    if (Xmin > x)
-                        Xmin = x;
-                    if (Ymin > y)
-                        Ymin = y;
-                    if (Xmax < x)
-                        Xmax = x;
-                    if (Ymax < y)
-                        Ymax = y;
+                    Xmin = min(x, Xmin);
+                    Ymin = min(y, Ymin);
+                    Xmax = max(x, Xmax);
+                    Ymax = max(y, Ymax);
                 }
             }
         }

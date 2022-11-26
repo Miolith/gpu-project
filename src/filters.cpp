@@ -271,7 +271,7 @@ public:
 };
 
 // connected component labeling Two Pass Algorithm
-vector<vector<int>> connectCompenent(rgba** img, int height, int width, int& Labelnum)
+vector<vector<int>> connectCompenent(rgba** img, int height, int width, set<int> &labelSet)
 {
     vector<vector<int>> label = vector<vector<int>>(height, vector<int>(width, 0));
 
@@ -319,15 +319,13 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width, int& Lab
         }
     }
 
-    Labelnum = 0;
-
     for (int i = 0; i < height; i++)
         for (int j = 0; j < width; j++)
             if (label[i][j] != 0)
             {
                 label[i][j] = disjoint_set.find(label[i][j]);
-                Labelnum = max(Labelnum, label[i][j]);
+                labelSet.insert(label[i][j]);
             }
-
+    
     return label;
 }

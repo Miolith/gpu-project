@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <iostream>
+#include <set>
 
 #include "CImg.h"
 #include "draw.h"
@@ -9,40 +10,41 @@ using namespace std;
 using namespace cimg_library;
 
 // Function to find bounding box for a given image
-boxList findBox(char *reference, char *image)
+boxList findBox(rgba** ref, int w, int h, char *image)
 {
     boxList box;
 
-    int width;
-    int height;
-    int w, h;
+    int width, height;
 
     rgba **img = loadImage(image, &width, &height);
-    rgba **ref = loadImage(reference, &w, &h);
-    grayScale(img, width, height);
-    gaussianBlur(ref, w, h); // TODO: put them out of findBox for opti
     assert(w == width && h == height);
+
+    grayScale(img, width, height);
+    gaussianBlur(img, width, height);
+
     imageDiff(ref, img, width, height);
+    saveImage("patate_diff.png", img, width, height);
+
     // Fermeture
     dilation(img, height, width, 20);
     erosion(img, height, width, 20);
+    saveImage("patate_closing.png", img, width, height);
+
     // Ouverture
     erosion(img, height, width, 50);
     dilation(img, height, width, 50);
+    saveImage("patate_opening.png", img, width, height);
     
-    saveImage("patate_nothresh.png", img, width, height);
-    basic_threshold(img, height, width, 80);
+    basic_threshold(img, height, width, 40);
     
     saveImage("patate_afterthresh.png", img, width, height);
-    int size = 0;
-    vector<vector<int>> labels = connectCompenent(img, height, width, size);
+    set<int> label_list;
+    vector<vector<int>> labels = connectCompenent(img, height, width, label_list);
     
-    show_components(img, labels, width, height, size);
+    show_components(img, labels, width, height, label_list);
     saveImage("patate_color.png", img, width, height);
 
-    //box.push_back(basic_box_detection(img, width, height));
-
-    for(auto boxe: component_box_detection(labels, width, height, size))
+    for(auto boxe: component_box_detection(labels, width, height, label_list))
     {
         box.push_back(boxe);
     }
@@ -52,16 +54,28 @@ boxList findBox(char *reference, char *image)
     return box;
 }
 
+rgba** loadReference(char *filename, int *width, int *height)
+{
+    rgba **image = loadImage(filename, width, height);
+    grayScale(image, *width, *height);
+    gaussianBlur(image, *width, *height);
+    return image;
+}
+
 // Function to find bounding boxes for each image using the reference image
 boxMap findBoundingBoxes(char *reference, int count, char **images)
 {
     boxMap boxes;
+    int h, w;
+    rgba** ref = loadReference(reference, &w, &h);
     for (int i = 0; i < count; i++)
     {
-        boxes[images[i]] = findBox(reference, images[i]);
+        boxes[images[i]] = findBox(ref, w, h, images[i]);
     }
     return boxes;
 }
+
+
 
 // function to print the bounding boxes in json format
 void printBoundingBoxes(boxMap boxes)
