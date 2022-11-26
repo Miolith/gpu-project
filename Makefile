@@ -1,7 +1,7 @@
-CC=gcc
-CPPFLAGS=-L/usr/X11R6/lib -lm -lpthread -lX11 -pedantic -Wall -Wextra
+CC=nvcc
+CPPFLAGS=-L/usr/X11R6/lib -lm -lpthread -lX11
 COMPFLAGS=-std=c++11
-SRC=src/*.cpp
+SRC=src/*.cpp src/*.cu
 EXEC_NAME=./main
 
 # Check System for OSX Comptability Support
@@ -15,7 +15,7 @@ $(EXEC_NAME):
 ifeq ($(OS),Darwin) # OSX
 	g++ $(SRC) $(COMPFLAGS) $(CPPFLAGS) -o $@
 else # Other
-	g++ $(SRC) $(CPPFLAGS) -o $@
+	$(CC) $(SRC) $(CPPFLAGS) -o $@
 endif
 
 run:
@@ -25,5 +25,5 @@ debug: CPPFLAGS += -g #-fsanitize=address
 debug: $(EXEC_NAME)
 
 clean:
-	-rm $(EXEC_NAME)
+	rm $(EXEC_NAME)
 

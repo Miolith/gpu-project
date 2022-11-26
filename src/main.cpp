@@ -2,9 +2,13 @@
 #include <assert.h>
 #include <iostream>
 #include <set>
+#include <cstdlib>
 
 #include "CImg.h"
 #include "draw.h"
+
+#define GPU 1
+#define CPU 0
 
 using namespace std;
 using namespace cimg_library;
@@ -104,11 +108,26 @@ int main(int argc, char **argv)
     if (argc < 3)
     {
         cout << "Usage :\n"
-             << argv[0] << " backgroundImage ImagePath [ImagePath]+" << endl
+             << argv[0] << "DEVICE=(CPU|GPU) ./main backgroundImage ImagePath [ImagePath]+" << endl
              << "\n";
         return 0;
     }
     // mybin refencec.png image1.png ...
+
+    char* device_name = getenv("DEVICE");
+    int device = CPU;
+
+
+    if (device_name != NULL && strcmp(device_name, "GPU") == 0)
+    {
+        cerr << "Using GPU" << endl;
+        device = GPU;
+    }
+    else
+    {
+        cerr << "Using CPU" << endl;
+    }
+
     boxMap boxes = findBoundingBoxes(argv[1], argc - 2, argv + 2);
 
     printBoundingBoxes(boxes);
