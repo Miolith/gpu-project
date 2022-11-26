@@ -223,13 +223,59 @@ void basic_threshold(rgba **image, int height, int width, uint8_t threshold)
     }
 }
 
+class DisjSet {
+    map<int, int> parent, rank;
+ 
+public:
+   
+    DisjSet(int n)
+    {
+        makeSet(n);
+    }
+ 
+    void makeSet(int n)
+    {
+        parent[n] = n;
+    }
+ 
+    int find(int x)
+    {
+        if (parent[x] != x) {
+            parent[x] = find(parent[x]);
+        }
+ 
+        return parent[x];
+    }
+ 
+    void Union(int x, int y)
+    {
+        int xset = find(x);
+        int yset = find(y);
+ 
+        if (xset == yset)
+            return;
+ 
+        if (rank[xset] < rank[yset])
+            parent[xset] = yset;
+        
+        else if (rank[xset] > rank[yset])
+            parent[yset] = xset;
+        
+ 
+        else
+        {
+            parent[yset] = xset;
+            rank[xset] = rank[xset] + 1;
+        }
+    }
+};
+
 // connected component labeling Two Pass Algorithm
 vector<vector<int>> connectCompenent(rgba** img, int height, int width, int& Labelnum)
 {
     vector<vector<int>> label = vector<vector<int>>(height, vector<int>(width, 0));
 
-    // list of links
-    vector<set<int>> link = vector<set<int>>(1, set<int>());
+    DisjSet disjoint_set(0);
 
     int nextLabel = 1;
 
@@ -258,8 +304,7 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width, int& Lab
 
                 if (label_set.empty())
                 {
-                    link.push_back(set<int>());
-                    link[nextLabel].insert(nextLabel);
+                    disjoint_set.makeSet(nextLabel);
                     label[i][j] = nextLabel;
                     nextLabel++;
                 }
@@ -267,23 +312,17 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width, int& Lab
                 {
                     label[i][j] = *min_element(label_set.begin(), label_set.end());
                     for (auto it = label_set.begin(); it != label_set.end(); it++)
-                    {
-                        link[*it].insert(label_set.begin(), label_set.end());
-                    }
+                        for (auto it2 = label_set.begin(); it2 != label_set.end(); it2++)
+                            disjoint_set.Union(*it, *it2);
                 }
             }
         }
     } 
     for (int i = 0; i < height; i++)
-    {
         for (int j = 0; j < width; j++)
-        {
             if (label[i][j] != 0)
-            {
-                label[i][j] = *min_element(link[label[i][j]].begin(), link[label[i][j]].end());
-            }
-        }
-    }
+                label[i][j] = disjoint_set.find(label[i][j]);
+
     Labelnum = nextLabel;
     return label;
 }
