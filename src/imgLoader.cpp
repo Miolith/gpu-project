@@ -93,3 +93,21 @@ void saveImage(const string &filename, rgba **image, int width, int height)
     }
     dest.save(filename.c_str());
 }
+
+void saveImageGPU(const string &filename, rgba *image, int width, int height)
+{
+    CImg<unsigned char> dest(width, height, 1, 4);
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            uint8_t *fields[4] = { &image[i * width + j].red, &image[i * width + j].green,
+                                   &image[i * width + j].blue, &image[i * width + j].alpha };
+            for (int spec = 0; spec < dest.spectrum(); spec++)
+            {
+                dest(j, i, 0, spec) = *(fields[spec]);
+            }
+        }
+    }
+    dest.save(filename.c_str());
+}
