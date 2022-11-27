@@ -60,8 +60,8 @@ rgba** createTestImage(rgba** ref, int width, int height)
 
     int x = width / 2;
     int y = height / 2;
-    int w = 100;
-    int h = 100;
+    int w = 3;
+    int h = 3;
     int r = 255;
     int g = 0;
     int b = 0;
@@ -92,6 +92,17 @@ bool compareImages(rgba** image1, rgba* image2, int width, int height)
                   (image1[i][j].alpha == image2[i * width + j].alpha)))
             {
                 cerr << "Images differ at (" << i << ", " << j << ")" << endl;
+
+                cerr << "image1: " << (int)image1[i][j].red << " "
+                     << (int)image1[i][j].green << " "
+                     << (int)image1[i][j].blue << " "
+                     << (int)image1[i][j].alpha << endl;
+
+                cerr << "image2: " << (int)image2[i * width + j].red << " " 
+                     << (int)image2[i * width + j].green << " "
+                     << (int)image2[i * width + j].blue << " "
+                     << (int)image2[i * width + j].alpha << endl;
+
                 return false;
             }
         }
@@ -132,8 +143,8 @@ void testGaussianBlur(rgba** image, rgba* imageGPU, int width, int height)
 
 int main()
 {
-    int width = 1000;
-    int height = 1000;
+    int width = 10;
+    int height = 10;
 
     rgba** ref = createRefImage(width, height);
     rgba** image = createTestImage(ref, width, height);

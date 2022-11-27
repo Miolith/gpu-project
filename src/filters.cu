@@ -61,7 +61,6 @@ void gaussianBlur(rgba **image, int width, int height)
             float red = 0.0;
             float green = 0.0;
             float blue = 0.0;
-            float alpha = 0.0;
             for (int k = -1; k <= 1; k++)
             {
                 for (int l = -1; l <= 1; l++)
@@ -75,15 +74,12 @@ void gaussianBlur(rgba **image, int width, int height)
                             newImage[i + k][j + l].green * filter[k + 1][l + 1];
                         blue +=
                             newImage[i + k][j + l].blue * filter[k + 1][l + 1];
-                        alpha +=
-                            newImage[i + k][j + l].alpha * filter[k + 1][l + 1];
                     }
                 }
             }
             image[i][j].red = red;
             image[i][j].green = green;
             image[i][j].blue = blue;
-            image[i][j].alpha = alpha;
         }
     }
 

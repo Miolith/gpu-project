@@ -41,7 +41,7 @@ else # Other
 endif
 	./test_suite
 
-testdebug: CPPFLAGS += -g
+testdebug: CPPFLAGS += -g -G
 testdebug: testlol
 
 clean:
