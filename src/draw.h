@@ -62,4 +62,4 @@ void gaussianBlurGPU(rgba *image, int width, int height);
 
 void dilationGPU(rgba **image, int width, int height, int precision);
 
-void imageDiffGPU(rgba **image, rgba **imageOther, int width, int height);
+void imageDiffGPU(rgba *image, rgba *ref, int width, int height);

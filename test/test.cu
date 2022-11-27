@@ -60,8 +60,8 @@ rgba** createTestImage(rgba** ref, int width, int height)
 
     int x = width / 2;
     int y = height / 2;
-    int w = 3;
-    int h = 3;
+    int w = 100;
+    int h = 100;
     int r = 255;
     int g = 0;
     int b = 0;
@@ -141,15 +141,31 @@ void testGaussianBlur(rgba** image, rgba* imageGPU, int width, int height)
         cerr << "gaussianBlur() failed" << endl;
 }
 
+void testImageDiff(rgba** ref, rgba** image, rgba* refGPU, rgba* imageGPU, int width, int height)
+{
+    cerr << "Testing IMAGE DIFF..." << endl;
+    cerr << "Applying CPU version imageDiff()" << endl;
+    imageDiff(ref, image, height, width);
+    cerr << "Applying GPU version imageDiffGPU()" << endl;
+    imageDiffGPU(refGPU, imageGPU, height, width);
+
+    // compare
+    if (compareImages(image, imageGPU, width, height))
+        cerr << "imageDiff() passed" << endl;
+    else
+        cerr << "imageDiff() failed" << endl;
+}
+
 int main()
 {
-    int width = 10;
-    int height = 10;
+    int width = 1000;
+    int height = 1000;
 
     rgba** ref = createRefImage(width, height);
     rgba** image = createTestImage(ref, width, height);
     rgba** imageCopy = copyImage(image, width, height);
     rgba* imageGPU = flattenImageGPU(imageCopy, width, height);
+    rgba* refGPU = flattenImageGPU(ref, width, height);
 
     saveImage("test_image.png", image, width, height);
 
@@ -162,6 +178,12 @@ int main()
 
     saveImage("test_image_blur.png", image, width, height);
     saveImageGPU("test_image_blur_gpu.png", imageGPU, width, height);
+
+    testImageDiff(ref, image, refGPU, imageGPU, width, height);
+
+    saveImage("test_image_diff.png", image, width, height);
+    saveImageGPU("test_image_diff_gpu.png", imageGPU, width, height);
+
     
     unloadImage(ref, height);
     unloadImage(image, height);

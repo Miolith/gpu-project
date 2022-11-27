@@ -72,16 +72,24 @@ __device__ int my_abs(int value)
 	return (value < 0) ? -value : value;
 }
 
-__global__ void imageDiffKernel(rgba *d_image, rgba **imageOther, int width, int height)
+__global__ void imageDiffKernel(rgba *dst_image, rgba *ref, int width, int height, size_t pitch)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x < width && y < height)
     {
-        int index = y * width + x;
-        d_image[index].red = my_abs(d_image[index].red - imageOther[y][x].red);
-        d_image[index].blue = my_abs(d_image[index].blue - imageOther[y][x].blue);
-        d_image[index].green = my_abs(d_image[index].green - imageOther[y][x].green);
+        dst_image = (rgba *)((char *)dst_image + y * pitch);
+        ref = (rgba *)((char *)ref + y * pitch);
+
+        int index = x;
+
+        int red = my_abs(dst_image[index].red - ref[index].red);
+        int green = my_abs(dst_image[index].green - ref[index].green);
+        int blue = my_abs(dst_image[index].blue - ref[index].blue);
+
+        dst_image[index].red = red;
+        dst_image[index].green = green;
+        dst_image[index].blue = blue;
     }
 }
 
@@ -141,28 +149,7 @@ void grayScaleGPU(rgba *image, int width, int height)
     cudaFree(dst_image);
 }
 
-void imageDiffGPU(rgba **image, rgba **imageOther, int width, int height)
-{
-    rgba *d_image;
-    int size = width * sizeof(rgba);
-    cudaMalloc(&d_image, size * height);
-    for (int y = 0; y < height; y++)
-    {
-        cudaMemcpy(d_image + y * width, image[y], size, cudaMemcpyHostToDevice);
-    }
-    dim3 threadsPerBlock(32, 32);
-    dim3 numBlocks((width + threadsPerBlock.x - 1) / threadsPerBlock.x,
-                   (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-    imageDiffKernel<<<numBlocks, threadsPerBlock>>>(d_image, imageOther, width,
-                                                    height);
-
-    for (int y = 0; y < height; y++)
-    {
-        cudaMemcpy(image[y], d_image + y * width, size, cudaMemcpyDeviceToHost);
-    }
-    cudaFree(d_image);
-}
 
 void gaussianBlurGPU(rgba *image, int width, int height)
 {
@@ -193,6 +180,34 @@ void gaussianBlurGPU(rgba *image, int width, int height)
     cudaFree(src_image);
 }
 
+void imageDiffGPU(rgba *ref, rgba *image, int width, int height)
+{
+    rgba *dst_image, *ref_image;
+    size_t pitch;
+
+    cudaMallocPitch(&dst_image, &pitch, width * sizeof(rgba), height);
+    cudaMallocPitch(&ref_image, &pitch, width * sizeof(rgba), height);
+
+    cudaMemcpy2D(dst_image, pitch, image, width * sizeof(rgba), width * sizeof(rgba),
+                height, cudaMemcpyHostToDevice);
+    cudaMemcpy2D(ref_image, pitch, ref, width * sizeof(rgba), width * sizeof(rgba),
+                height, cudaMemcpyHostToDevice);
+
+
+    int bsize = 32;
+    int w = ceil((float)width / bsize);
+    int h = ceil((float)height / bsize);
+
+    dim3 threadsPerBlock(bsize, bsize);
+    dim3 numBlocks(w, h);
+
+    imageDiffKernel<<<numBlocks, threadsPerBlock>>>(dst_image, ref_image, width, height, pitch);
+    cudaDeviceSynchronize();
+
+    cudaMemcpy2D(image, width * sizeof(rgba), dst_image, pitch, width * sizeof(rgba),
+                height, cudaMemcpyDeviceToHost);
+    cudaFree(dst_image);
+}
 void dilationGPU(rgba **image, int width, int height, int precision)
 {
     bool **circleTable = getCircleTable(2 * precision);
