@@ -156,6 +156,21 @@ void testImageDiff(rgba** ref, rgba** image, rgba* refGPU, rgba* imageGPU, int w
         cerr << "imageDiff() failed" << endl;
 }
 
+void testDilation(rgba** image, rgba* imageGPU, int precision, int width, int height)
+{
+    cerr << "Testing DILATION..." << endl;
+    cerr << "Applying CPU version dilation()" << endl;
+    dilation(image, height, width, precision);
+    cerr << "Applying GPU version dilationGPU()" << endl;
+    dilationGPU(imageGPU, height, width, precision);
+
+    // compare
+    if (compareImages(image, imageGPU, width, height))
+        cerr << "dilation() passed" << endl;
+    else
+        cerr << "dilation() failed" << endl;
+}
+
 int main()
 {
     int width = 1000;
@@ -171,6 +186,9 @@ int main()
 
     testGrayScale(image, imageGPU, width, height);
 
+    grayScale(ref, height, width);
+    grayScaleGPU(refGPU, height, width);
+
     saveImage("test_image_gray.png", image, width, height);
     saveImageGPU("test_image_gray_gpu.png", imageGPU, width, height);
 
@@ -179,11 +197,18 @@ int main()
     saveImage("test_image_blur.png", image, width, height);
     saveImageGPU("test_image_blur_gpu.png", imageGPU, width, height);
 
+    gaussianBlur(ref, height, width);
+    gaussianBlurGPU(refGPU, height, width);
+
     testImageDiff(ref, image, refGPU, imageGPU, width, height);
 
     saveImage("test_image_diff.png", image, width, height);
     saveImageGPU("test_image_diff_gpu.png", imageGPU, width, height);
+    
+    testDilation(image, imageGPU, 10, width, height);
 
+    saveImage("test_image_dilation.png", image, width, height);
+    saveImageGPU("test_image_dilation_gpu.png", imageGPU, width, height);
     
     unloadImage(ref, height);
     unloadImage(image, height);

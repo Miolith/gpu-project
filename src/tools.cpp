@@ -8,26 +8,44 @@
 using namespace std;
 using namespace cimg_library;
 
-bool **getCircleTable(int radius)
+bool **getCircleTable(int diameter)
 {
-    int new_y = radius / 2;
-    int new_x = radius / 2;
-
-    int squaredRadius = (radius / 2) * (radius / 2);
-    bool **circleTable = new bool *[radius + 1];
-    for (int i = 0; i <= radius; i++)
+    diameter = diameter + 1;
+    int radius = diameter / 2;
+    bool **circleTable = new bool*[diameter];
+    int r2 = radius * radius;
+    
+    for (int i = 0; i < diameter; i++)
+        circleTable[i] = new bool[diameter];
+    
+    for (int i = 0; i < diameter; i++)
     {
-        circleTable[i] = new bool[radius + 1];
-    }
-    for (int yoffset = -new_y; yoffset <= new_y; yoffset++)
-    {
-        for (int xoffset = -new_x; xoffset <= new_x; xoffset++)
+        for (int j = 0; j < diameter; j++)
         {
-            circleTable[yoffset + new_y][xoffset + new_x] =
-                (pow(xoffset, 2) + pow(yoffset, 2)) > squaredRadius;
+            int x = i - radius;
+            int y = j - radius;
+            circleTable[i][j] = (x * x + y * y > r2);
         }
     }
+    return circleTable;
+}
 
+bool *getCircleTableGPU(int diameter)
+{
+    diameter = diameter + 1;
+    int radius = diameter / 2;
+    bool *circleTable = new bool[diameter * diameter];
+    int r2 = radius * radius;
+    
+    for (int i = 0; i <= diameter; i++)
+    {
+        for (int j = 0; j <= diameter; j++)
+        {
+            int x = i - radius;
+            int y = j - radius;
+            circleTable[i * diameter + j] = (x * x + y * y > r2);
+        }
+    }
     return circleTable;
 }
 

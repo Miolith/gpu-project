@@ -93,14 +93,15 @@ __global__ void imageDiffKernel(rgba *dst_image, rgba *ref, int width, int heigh
     }
 }
 
-__global__ void dilationKernel(rgba *image, bool **circleTable, rgba **refImg,
-                               int width, int height, int precision)
+__global__ void dilationKernel(rgba *dst_image, rgba *src_image, int width,
+                            int height, size_t pitch, int precision, bool* circleTable) 
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x < width && y < height)
     {
-        int index = y * width + x;
+        dst_image = (rgba *)((char *)dst_image + y * pitch);
+        int index = x;
 
         uint8_t maxi = 0;
         for (int yoffset = -precision; yoffset <= precision; yoffset++)
@@ -110,18 +111,18 @@ __global__ void dilationKernel(rgba *image, bool **circleTable, rgba **refImg,
                 int new_y = y + yoffset;
                 int new_x = x + xoffset;
                 if (new_y < 0 || new_y >= height || new_x < 0 || new_x >= width
-                    || circleTable[yoffset + precision][xoffset + precision])
+                    || circleTable[(yoffset + precision) * (precision * 2 + 1) + xoffset + precision])
                     continue;
 
-                if (refImg[new_y][new_x].red > maxi)
-                {
-                    maxi = refImg[new_y][new_x].red;
-                }
+                rgba* img = (rgba *)((char *)src_image + new_y * pitch);
+                
+                if (img[new_x].red > maxi)
+                    maxi = img[new_x].red;
             }
         }
-        image[index].red = maxi;
-        image[index].green = maxi;
-        image[index].blue = maxi;
+        dst_image[index].red = maxi;
+        dst_image[index].green = maxi;
+        dst_image[index].blue = maxi;
     }
 }
 
@@ -208,28 +209,40 @@ void imageDiffGPU(rgba *ref, rgba *image, int width, int height)
                 height, cudaMemcpyDeviceToHost);
     cudaFree(dst_image);
 }
-void dilationGPU(rgba **image, int width, int height, int precision)
+void dilationGPU(rgba *image, int width, int height, int precision)
 {
-    bool **circleTable = getCircleTable(2 * precision);
-    int line_size = width * sizeof(rgba);
-    rgba *d_image;
-    cudaMalloc(&d_image, height * width * sizeof(rgba));
-    for (int y = 0; y < height; y++)
-    {
-        cudaMemcpy(d_image + y * width, image[y], line_size,
-                   cudaMemcpyHostToDevice);
-    }
-    dim3 threadsPerBlock(32, 32);
-    dim3 numBlocks((width + threadsPerBlock.x - 1) / threadsPerBlock.x,
-                   (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    bool *circleTable = getCircleTableGPU(2 * precision);
+    bool *circleTableCuda;
 
-    dilationKernel<<<numBlocks, threadsPerBlock>>>(d_image, circleTable, image,
-                                                   width, height, precision);
-    for (int y = 0; y < height; y++)
-    {
-        cudaMemcpy(image[y], d_image + y * width, line_size,
-                   cudaMemcpyDeviceToHost);
-    }
-    cudaFree(d_image);
-    freeCircleTable(circleTable, 2 * precision);
+    rgba *dst_image, *src_image;
+
+    size_t pitch;
+
+    cudaMallocPitch(&dst_image, &pitch, width * sizeof(rgba), height);
+    cudaMallocPitch(&src_image, &pitch, width * sizeof(rgba), height);
+    cudaMalloc(&circleTableCuda, (2 * precision + 1) * (2 * precision + 1) * sizeof(bool));
+
+    cudaMemcpy2D(dst_image, pitch, image, width * sizeof(rgba), width * sizeof(rgba),
+                height, cudaMemcpyHostToDevice);
+    cudaMemcpy2D(src_image, pitch, image, width * sizeof(rgba), width * sizeof(rgba),
+                height, cudaMemcpyHostToDevice);
+    cudaMemcpy(circleTableCuda, circleTable, (2 * precision + 1) * (2 * precision + 1) * sizeof(bool), cudaMemcpyHostToDevice);
+
+    int bsize = 32;
+    int w = ceil((float)width / bsize);
+    int h = ceil((float)height / bsize);
+
+    dim3 threadsPerBlock(bsize, bsize);
+    dim3 numBlocks(w, h);
+
+    dilationKernel<<<numBlocks, threadsPerBlock>>>(dst_image, src_image, width, height, pitch, precision, circleTableCuda);
+    cudaDeviceSynchronize();
+
+    cudaMemcpy2D(image, width * sizeof(rgba), dst_image, pitch, width * sizeof(rgba),
+                height, cudaMemcpyDeviceToHost);
+    cudaFree(dst_image);
+    cudaFree(src_image);
+    cudaFree(circleTableCuda);
+    free(circleTable);
+    return;
 }
