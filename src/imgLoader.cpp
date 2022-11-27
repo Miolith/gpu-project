@@ -34,13 +34,44 @@ rgba **loadImage(const string &filename, int *width, int *height)
     return image;
 }
 
+
+rgba *loadImageGPU(const string &filename, int *width, int *height)
+{
+    // load the image from path into the rgba array
+    CImg<unsigned char> src(filename.c_str());
+    *width = src.width();
+    *height = src.height();
+
+    rgba* image = new rgba[*height * *width];
+
+    for (int i = 0; i < *height; i++)
+    {
+        for (int j = 0; j < *width; j++)
+        {
+            uint8_t *fields[4] = { &image[i * *width + j].red, &image[i * *width + j].green,
+                                   &image[i * *width + j].blue, &image[i * *width + j].alpha };
+            image[i * *width + j].alpha = 255;
+            for (int spec = 0; spec < src.spectrum(); spec++)
+            {
+                *(fields[spec]) = src(j, i, 0, spec);
+            }
+        }
+    }
+    return image;
+}
+
 void unloadImage(rgba **image, int height)
 {
-    // delete the image array
     for (int i = 0; i < height; i++)
     {
         delete[] image[i];
     }
+    delete[] image;
+}
+
+
+void unloadImageGPU(rgba *image)
+{
     delete[] image;
 }
 
