@@ -94,7 +94,8 @@ void grayScaleGPU(rgba **image, int width, int height)
 void GaussianBlurGPU(rgba **image, int width, int height)
 {
     int line_size = width * sizeof(rgba);
-    rgba *d_image = cudaMalloc(&d_image, height*width*rgba(rgba));
+    rgba *d_image;
+    cudaMalloc(&d_image, height*width*sizeof(rgba));
     for(int y = 0; y < height; y++)
     {
         cudaMemcpy(d_image +y*width, image[y], line_size, cudaMemcpyHostToDevice);

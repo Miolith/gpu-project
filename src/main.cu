@@ -69,7 +69,7 @@ boxList findBoxGPU(rgba** ref, int w, int h, char *image)
 
     // call cuda kernel grayscale
     grayScaleGPU(img, width, height);
-    gaussianBlur(img, width, height);
+    GaussianBlurGPU(img, width, height);
 
     imageDiff(ref, img, width, height);
     saveImage("patate_diff.png", img, width, height);
