@@ -139,8 +139,16 @@ int main()
     rgba** image = createTestImage(ref, width, height);
     rgba** imageCopy = copyImage(image, width, height);
 
+    saveImage("test_image.png", image, width, height);
+
     testGrayScale(image, imageCopy, width, height);
+
+    saveImage("test_image_gray.png", image, width, height);
+
     testGaussianBlur(image, imageCopy, width, height);
+
+    saveImage("test_image_blur.png", image, width, height);
+    saveImage("test_image_blur_gpu.png", imageCopy, width, height);
 
     unloadImage(ref, height);
     unloadImage(image, height);
