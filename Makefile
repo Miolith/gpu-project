@@ -2,15 +2,18 @@ CC=nvcc
 CPPFLAGS=-L/usr/X11R6/lib -lm -lpthread -lX11
 COMPFLAGS=-std=c++11
 SRC=src/*.cpp src/*.cu
-EXEC_NAME=./main
+EXEC_NAME=main
+SRC_TEST=test/*.cu\
+		 src/*.cpp\
+		 src/filters.cu\
+		 src/GPUfilters.cu
 
 # Check System for OSX Comptability Support
 OS=$(shell uname)
 
-
+all: CPPFLAGS += -O2
 all: $(EXEC_NAME)
 
-$(EXEC_NAME): CPPFLAGS += -O2
 $(EXEC_NAME):
 ifeq ($(OS),Darwin) # OSX
 	g++ $(SRC) $(COMPFLAGS) $(CPPFLAGS) -o $@
@@ -19,10 +22,19 @@ else # Other
 endif
 
 run:
-	$(EXEC_NAME) images/*
+	./$(EXEC_NAME) images/*
 
 debug: CPPFLAGS += -g #-fsanitize=address
 debug: $(EXEC_NAME)
+
+test: CPPFLAGS += -O2
+test:
+ifeq ($(OS),Darwin) # OSX
+	g++ $(SRC_TEST) $(COMPFLAGS) $(CPPFLAGS) -o test_suite
+else # Other
+	$(CC) $(SRC_TEST) $(CPPFLAGS) -o test_suite
+endif
+	./test_suite
 
 clean:
 	rm $(EXEC_NAME)
