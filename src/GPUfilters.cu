@@ -24,6 +24,49 @@ __global__ void grayScaleKernel(rgba *image, int width, int height)
         image[index].blue = gray;
     }
 }
+
+__constant__ float gfilter[3][3] = { { 1.0 / 16, 2.0 / 16, 1.0 / 16 },
+                               { 2.0 / 16, 4.0 / 16, 2.0 / 16 },
+                               { 1.0 / 16, 2.0 / 16, 1.0 / 16 } };
+
+
+__global__ void gaussianBlurKernel(rgba *image, rgba **refImg, int width, int height)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x < width && y < height)
+    {
+        int index = y * width + x;
+        float red = 0.0;
+        float green = 0.0;
+        float blue = 0.0;
+        float alpha = 0.0;
+        for (int k = -1; k <= 1; k++)
+        {
+            for (int l = -1; l <= 1; l++)
+            {
+                if (y + k >= 0 && y + k < height && x + l >= 0
+                    && x + l < width)
+                {
+                    red +=
+                        refImg[y + k][x + l].red * gfilter[k + 1][l + 1];
+                    green +=
+                        refImg[y + k][x + l].green * gfilter[k + 1][l + 1];
+                    blue +=
+                        refImg[y + k][x + l].blue * gfilter[k + 1][l + 1];
+                    alpha +=
+                        refImg[y + k][x + l].alpha * gfilter[k + 1][l + 1];
+                }
+            }
+        }
+        image[index].red = red;
+        image[index].green = green;
+        image[index].blue = blue;
+        image[index].alpha = alpha;
+    }
+}
+
+
 // call gray scale kernel
 void grayScaleGPU(rgba **image, int width, int height)
 {
@@ -39,9 +82,31 @@ void grayScaleGPU(rgba **image, int width, int height)
                    (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
     grayScaleKernel<<<numBlocks, threadsPerBlock>>>(d_image, width, height);
+
     for (int y = 0; y < height; y++)
     {
         cudaMemcpy(image[y], d_image + y*width, size, cudaMemcpyDeviceToHost);
+    }
+    cudaFree(d_image);
+}
+
+
+void GaussianBlurGPU(rgba **image, int width, int height)
+{
+    int line_size = width * sizeof(rgba);
+    rgba *d_image = cudaMalloc(&d_image, height*width*rgba(rgba));
+    for(int y = 0; y < height; y++)
+    {
+        cudaMemcpy(d_image +y*width, image[y], line_size, cudaMemcpyHostToDevice);
+    }
+    dim3 threadsPerBlock(32, 32);
+    dim3 numBlocks((width + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                   (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+    gaussianBlurKernel<<<numBlocks, threadsPerBlock>>>(d_image, image, width, height);
+    for (int y = 0; y < height; y++)
+    {
+        cudaMemcpy(image[y], d_image + y*width, line_size, cudaMemcpyDeviceToHost);
     }
     cudaFree(d_image);
 }
