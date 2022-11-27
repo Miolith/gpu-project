@@ -71,17 +71,17 @@ boxList findBoxGPU(rgba** ref, int w, int h, char *image)
     grayScaleGPU(img, width, height);
     GaussianBlurGPU(img, width, height);
 
-    imageDiff(ref, img, width, height);
+    imageDiffGPU(img,ref, width, height);
     saveImage("patate_diff.png", img, width, height);
 
     // Fermeture
-    dilationGPU(img, height, width, 20);
+    dilation(img, height, width, 20);
     erosion(img, height, width, 20);
     saveImage("patate_closing.png", img, width, height);
 
     // Ouverture
     erosion(img, height, width, 50);
-    dilationGPU(img, height, width, 50);
+    dilation(img, height, width, 50);
     saveImage("patate_opening.png", img, width, height);
     
     basic_threshold(img, height, width, 40);
