@@ -101,38 +101,33 @@ bool compareImages(rgba** image1, rgba** image2, int width, int height)
 
 void testGrayScale(rgba** image, rgba** imageCopy, int width, int height)
 {
-    cerr << "Testing grayscale..." << endl;
-    // convert image to grayscale
+    cerr << "Testing GRAY SCALE..." << endl;
+    cerr << "Applying CPU version grayScale()" << endl;
     grayScale(image, height, width);
+    cerr << "Applying GPU version grayScaleGPU()" << endl;
     grayScaleGPU(imageCopy, height, width);
 
     // compare
     if (compareImages(image, imageCopy, width, height))
-    {
         cerr << "grayScale() passed" << endl;
-    }
     else
-    {
         cerr << "grayScale() failed" << endl;
-    }
 }
 
 void testGaussianBlur(rgba** image, rgba** imageCopy, int width, int height)
 {
-    cerr << "Testing gaussian blur..." << endl;
-    // blur image
+    cerr << "Testing GAUSSIAN BLUR..." << endl;
+    
+    cerr << "Applying CPU version gaussianBlur()" << endl;
     gaussianBlur(image, height, width);
+    cerr << "Applying GPU version gaussianBlurGPU()" << endl;
     GaussianBlurGPU(imageCopy, height, width);
 
     // compare
     if (compareImages(image, imageCopy, width, height))
-    {
         cerr << "gaussianBlur() passed" << endl;
-    }
     else
-    {
         cerr << "gaussianBlur() failed" << endl;
-    }
 }
 
 int main()
