@@ -66,6 +66,40 @@ __global__ void gaussianBlurKernel(rgba *image, rgba **refImg, int width, int he
     }
 }
 
+__global__ void dilationKernel(rgba *image, bool **circleTable,rgba **refImg, int width, int height, int precision)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x < width && y < height)
+    {
+        int index = y * width + x;
+ 
+	uint8_t maxi = 0;
+        for (int yoffset = -precision; yoffset <= precision; yoffset++)
+        {
+		for (int xoffset = -precision; xoffset <= precision; xoffset++)
+		{
+		    int new_y = y + yoffset;
+		    int new_x = x + xoffset;
+		    if (new_y < 0 || new_y >= height || new_x < 0
+			|| new_x >= width
+			|| circleTable[yoffset + precision]
+				      [xoffset + precision])
+			continue;
+
+		    if(refImg[new_y][new_x].red > maxi)
+		    {
+			    maxi = refImg[new_y][new_x].red;
+		    }
+		}
+        }
+        image[index].red = maxi;
+        image[index].green = maxi;
+        image[index].blue = maxi;
+    }
+
+}
+
 
 // call gray scale kernel
 void grayScaleGPU(rgba **image, int width, int height)
@@ -105,6 +139,28 @@ void GaussianBlurGPU(rgba **image, int width, int height)
                    (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
     gaussianBlurKernel<<<numBlocks, threadsPerBlock>>>(d_image, image, width, height);
+    for (int y = 0; y < height; y++)
+    {
+        cudaMemcpy(image[y], d_image + y*width, line_size, cudaMemcpyDeviceToHost);
+    }
+    cudaFree(d_image);
+}
+
+void dilationGPU(rgba **image, int width, int height, int precision)
+{
+    bool **circleTable = getCircleTable(2 * precision);
+    int line_size = width * sizeof(rgba);
+    rgba *d_image;
+    cudaMalloc(&d_image, height*width*sizeof(rgba));
+    for(int y = 0; y < height; y++)
+    {
+        cudaMemcpy(d_image +y*width, image[y], line_size, cudaMemcpyHostToDevice);
+    }
+    dim3 threadsPerBlock(32, 32);
+    dim3 numBlocks((width + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                   (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+    dilationKernel<<<numBlocks, threadsPerBlock>>>(d_image, circleTable, image, width, height, precision);
     for (int y = 0; y < height; y++)
     {
         cudaMemcpy(image[y], d_image + y*width, line_size, cudaMemcpyDeviceToHost);

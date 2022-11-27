@@ -75,13 +75,13 @@ boxList findBoxGPU(rgba** ref, int w, int h, char *image)
     saveImage("patate_diff.png", img, width, height);
 
     // Fermeture
-    dilation(img, height, width, 20);
+    dilationGPU(img, height, width, 20);
     erosion(img, height, width, 20);
     saveImage("patate_closing.png", img, width, height);
 
     // Ouverture
     erosion(img, height, width, 50);
-    dilation(img, height, width, 50);
+    dilationGPU(img, height, width, 50);
     saveImage("patate_opening.png", img, width, height);
     
     basic_threshold(img, height, width, 40);
@@ -89,7 +89,6 @@ boxList findBoxGPU(rgba** ref, int w, int h, char *image)
     saveImage("patate_afterthresh.png", img, width, height);
     set<int> label_list;
     vector<vector<int>> labels = connectCompenent(img, height, width, label_list);
-    
     show_components(img, labels, width, height, label_list);
     saveImage("patate_color.png", img, width, height);
 

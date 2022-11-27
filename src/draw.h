@@ -54,3 +54,5 @@ void show_components(rgba** img, vector<vector<int>> comp, int width, int height
 void grayScaleGPU(rgba **image, int width, int height);
 
 void GaussianBlurGPU(rgba **image, int width, int height);
+
+void dilationGPU(rgba **image, int width, int height, int precision);

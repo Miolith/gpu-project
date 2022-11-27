@@ -14,7 +14,7 @@ using namespace cimg_library;
 void show_components(rgba **img, vector<vector<int>> comp, int width,
                      int height, set<int> &labelSet)
 {
-    int slice = 360 / (labelSet.size());
+    int slice = 300 / (labelSet.size());
     HSL rainbow(100, 1, 0.5);
     for (auto i : labelSet)
     {
@@ -22,7 +22,7 @@ void show_components(rgba **img, vector<vector<int>> comp, int width,
         {
             for (int x = 0; x < width; x++)
             {
-                rainbow.H = slice * i;
+                rainbow.H = 30 + slice * i;
                 if (comp[y][x] == i)
                 {
                     img[y][x].red = HSLToRGB(rainbow).R;
