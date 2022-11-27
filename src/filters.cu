@@ -39,7 +39,7 @@ void gaussianBlur(rgba **image, int width, int height)
     for (int i = 0; i < height; i++)
     {
         newImage[i] = new rgba[width];
-        for(int j = 0; j < width; j++)
+        for (int j = 0; j < width; j++)
         {
             newImage[i][j].red = image[i][j].red;
             newImage[i][j].green = image[i][j].green;
@@ -69,10 +69,12 @@ void gaussianBlur(rgba **image, int width, int height)
                     if (i + k >= 0 && i + k < height && j + l >= 0
                         && j + l < width)
                     {
-                        red += newImage[i + k][j + l].red * filter[k + 1][l + 1];
+                        red +=
+                            newImage[i + k][j + l].red * filter[k + 1][l + 1];
                         green +=
                             newImage[i + k][j + l].green * filter[k + 1][l + 1];
-                        blue += newImage[i + k][j + l].blue * filter[k + 1][l + 1];
+                        blue +=
+                            newImage[i + k][j + l].blue * filter[k + 1][l + 1];
                         alpha +=
                             newImage[i + k][j + l].alpha * filter[k + 1][l + 1];
                     }
@@ -122,7 +124,7 @@ __global__ void grayScaleKernel(rgba *image, int width, int height)
 void grayScaleGPU(rgba **image, int width, int height)
 {
     rgba *d_image;
-    int size = width * height * sizeof(rgba);
+    int size = width * sizeof(rgba);
     cudaMalloc(&d_image, size);
     cudaMemcpy(d_image, *image, size, cudaMemcpyHostToDevice);
 
@@ -131,11 +133,12 @@ void grayScaleGPU(rgba **image, int width, int height)
                    (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
     grayScaleKernel<<<numBlocks, threadsPerBlock>>>(d_image, width, height);
-
-    cudaMemcpy(*image, d_image, size, cudaMemcpyDeviceToHost);
+    for (int y = 0; y < height; y++)
+    {
+        cudaMemcpy(image[y], d_image + y*width, size, cudaMemcpyDeviceToHost);
+    }
     cudaFree(d_image);
 }
-
 
 void dilation(rgba **image, int height, int width, int precision)
 {
@@ -175,7 +178,6 @@ void dilation(rgba **image, int height, int width, int precision)
             image[y][x].red = maxi;
             image[y][x].green = maxi;
             image[y][x].blue = maxi;
-
         }
     }
     // delete newImage
@@ -235,7 +237,7 @@ void basic_threshold(rgba **image, int height, int width, uint8_t threshold)
     {
         for (int j = 0; j < width; j++)
         {
-            if(image[i][j].red >= threshold)
+            if (image[i][j].red >= threshold)
             {
                 image[i][j].red = 255;
                 image[i][j].green = 255;
@@ -253,45 +255,45 @@ void basic_threshold(rgba **image, int height, int width, uint8_t threshold)
     }
 }
 
-class DisjSet {
+class DisjSet
+{
     map<int, int> parent, rank;
- 
+
 public:
-   
     DisjSet(int n)
     {
         makeSet(n);
     }
- 
+
     void makeSet(int n)
     {
         parent[n] = n;
     }
- 
+
     int find(int x)
     {
-        if (parent[x] != x) {
+        if (parent[x] != x)
+        {
             parent[x] = find(parent[x]);
         }
- 
+
         return parent[x];
     }
- 
+
     void Union(int x, int y)
     {
         int xset = find(x);
         int yset = find(y);
- 
+
         if (xset == yset)
             return;
- 
+
         if (rank[xset] < rank[yset])
             parent[xset] = yset;
-        
+
         else if (rank[xset] > rank[yset])
             parent[yset] = xset;
-        
- 
+
         else
         {
             parent[yset] = xset;
@@ -301,9 +303,11 @@ public:
 };
 
 // connected component labeling Two Pass Algorithm
-vector<vector<int>> connectCompenent(rgba** img, int height, int width, set<int> &labelSet)
+vector<vector<int>> connectCompenent(rgba **img, int height, int width,
+                                     set<int> &labelSet)
 {
-    vector<vector<int>> label = vector<vector<int>>(height, vector<int>(width, 0));
+    vector<vector<int>> label =
+        vector<vector<int>>(height, vector<int>(width, 0));
 
     DisjSet disjoint_set(0);
 
@@ -313,7 +317,6 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width, set<int>
     {
         for (int j = 0; j < width; j++)
         {
-
             if (img[i][j].red == 255)
             {
                 set<int> label_set;
@@ -322,7 +325,8 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width, set<int>
                 {
                     for (int n_j = j - 1; n_j <= j + 1; n_j++)
                     {
-                        if (n_j < 0 || n_i < 0 || n_i >= height || n_j >= width || (n_i == i && n_j == j))
+                        if (n_j < 0 || n_i < 0 || n_i >= height || n_j >= width
+                            || (n_i == i && n_j == j))
                             continue;
 
                         if (label[n_i][n_j] != 0)
@@ -340,9 +344,12 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width, set<int>
                 }
                 else
                 {
-                    label[i][j] = *min_element(label_set.begin(), label_set.end());
-                    for (auto it = label_set.begin(); it != label_set.end(); it++)
-                        for (auto it2 = label_set.begin(); it2 != label_set.end(); it2++)
+                    label[i][j] =
+                        *min_element(label_set.begin(), label_set.end());
+                    for (auto it = label_set.begin(); it != label_set.end();
+                         it++)
+                        for (auto it2 = label_set.begin();
+                             it2 != label_set.end(); it2++)
                             disjoint_set.Union(*it, *it2);
                 }
             }
@@ -356,6 +363,6 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width, set<int>
                 label[i][j] = disjoint_set.find(label[i][j]);
                 labelSet.insert(label[i][j]);
             }
-    
+
     return label;
 }
