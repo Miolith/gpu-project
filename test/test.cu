@@ -80,16 +80,16 @@ rgba** createTestImage(rgba** ref, int width, int height)
     return image;
 }
 
-bool compareImages(rgba** image1, rgba** image2, int width, int height)
+bool compareImages(rgba** image1, rgba* image2, int width, int height)
 {
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
-            if (!((image1[i][j].red == image2[i][j].red) &&
-            (image1[i][j].green == image2[i][j].green) &&
-            (image1[i][j].blue == image2[i][j].blue) &&
-            (image1[i][j].alpha == image2[i][j].alpha)))
+            if (!((image1[i][j].red == image2[i * width + j].red) &&
+                  (image1[i][j].green == image2[i * width + j].green) &&
+                  (image1[i][j].blue == image2[i * width + j].blue) &&
+                  (image1[i][j].alpha == image2[i * width + j].alpha)))
             {
                 cerr << "Images differ at (" << i << ", " << j << ")" << endl;
                 return false;
@@ -99,32 +99,32 @@ bool compareImages(rgba** image1, rgba** image2, int width, int height)
     return true;
 }
 
-void testGrayScale(rgba** image, rgba** imageCopy, int width, int height)
+void testGrayScale(rgba** image, rgba* imageGPU, int width, int height)
 {
     cerr << "Testing GRAY SCALE..." << endl;
     cerr << "Applying CPU version grayScale()" << endl;
     grayScale(image, height, width);
     cerr << "Applying GPU version grayScaleGPU()" << endl;
-    grayScaleGPU(imageCopy, height, width);
+    grayScaleGPU(imageGPU, height, width);
 
     // compare
-    if (compareImages(image, imageCopy, width, height))
+    if (compareImages(image, imageGPU, width, height))
         cerr << "grayScale() passed" << endl;
     else
         cerr << "grayScale() failed" << endl;
 }
 
-void testGaussianBlur(rgba** image, rgba** imageCopy, int width, int height)
+void testGaussianBlur(rgba** image, rgba* imageGPU, int width, int height)
 {
     cerr << "Testing GAUSSIAN BLUR..." << endl;
     
     cerr << "Applying CPU version gaussianBlur()" << endl;
     gaussianBlur(image, height, width);
     cerr << "Applying GPU version gaussianBlurGPU()" << endl;
-    GaussianBlurGPU(imageCopy, height, width);
+    gaussianBlurGPU(imageGPU, height, width);
 
     // compare
-    if (compareImages(image, imageCopy, width, height))
+    if (compareImages(image, imageGPU, width, height))
         cerr << "gaussianBlur() passed" << endl;
     else
         cerr << "gaussianBlur() failed" << endl;
@@ -138,19 +138,22 @@ int main()
     rgba** ref = createRefImage(width, height);
     rgba** image = createTestImage(ref, width, height);
     rgba** imageCopy = copyImage(image, width, height);
+    rgba* imageGPU = flattenImageGPU(imageCopy, width, height);
 
     saveImage("test_image.png", image, width, height);
 
-    testGrayScale(image, imageCopy, width, height);
+    testGrayScale(image, imageGPU, width, height);
 
     saveImage("test_image_gray.png", image, width, height);
+    saveImageGPU("test_image_gray_gpu.png", imageGPU, width, height);
 
-    testGaussianBlur(image, imageCopy, width, height);
+    testGaussianBlur(image, imageGPU, width, height);
 
     saveImage("test_image_blur.png", image, width, height);
-    saveImage("test_image_blur_gpu.png", imageCopy, width, height);
-
+    saveImageGPU("test_image_blur_gpu.png", imageGPU, width, height);
+    
     unloadImage(ref, height);
     unloadImage(image, height);
     unloadImage(imageCopy, height);
+    unloadImageGPU(imageGPU);
 }

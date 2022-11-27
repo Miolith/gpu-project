@@ -21,6 +21,7 @@ boxList findBox(rgba** ref, int w, int h, char *image)
     int width, height;
 
     rgba **img = loadImage(image, &width, &height);
+
     assert(w == width && h == height);
 
     grayScale(img, width, height);
@@ -65,11 +66,12 @@ boxList findBoxGPU(rgba** ref, int w, int h, char *image)
     int width, height;
 
     rgba **img = loadImage(image, &width, &height);
+    rgba* img1D = flattenImageGPU(img, width, height);
+    
     assert(w == width && h == height);
 
-    // call cuda kernel grayscale
-    grayScaleGPU(img, width, height);
-    GaussianBlurGPU(img, width, height);
+    grayScale(img, width, height);
+    gaussianBlur(img, width, height);
 
     imageDiff(ref,img, width, height);
     saveImage("patate_diff.png", img, width, height);

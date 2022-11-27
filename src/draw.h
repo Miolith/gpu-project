@@ -54,10 +54,11 @@ void show_components(rgba** img, vector<vector<int>> comp, int width, int height
 rgba *loadImageGPU(const string &filename, int *width, int *height);
 void unloadImageGPU(rgba *image);
 void saveImageGPU(const string &filename, rgba *image, int width, int height);
+rgba* flattenImageGPU(rgba** image, int width, int height);
 
-void grayScaleGPU(rgba **image, int width, int height);
+void grayScaleGPU(rgba *image, int width, int height);
 
-void GaussianBlurGPU(rgba **image, int width, int height);
+void gaussianBlurGPU(rgba *image, int width, int height);
 
 void dilationGPU(rgba **image, int width, int height, int precision);
 

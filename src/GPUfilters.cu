@@ -10,13 +10,15 @@
 using namespace std;
 using namespace cimg_library;
 
-__global__ void grayScaleKernel(rgba *image, int width, int height)
+__global__ void grayScaleKernel(rgba *image, int width, int height, size_t pitch)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x < width && y < height)
     {
-        int index = y * width + x;
+        image = (rgba *)((char *)image + y * pitch);
+        int index = x;
+
         uint8_t gray =
             (image[index].red + image[index].green + image[index].blue) / 3;
         image[index].red = gray;
@@ -29,35 +31,38 @@ __constant__ float gfilter[3][3] = { { 1.0 / 16, 2.0 / 16, 1.0 / 16 },
                                      { 2.0 / 16, 4.0 / 16, 2.0 / 16 },
                                      { 1.0 / 16, 2.0 / 16, 1.0 / 16 } };
 
-__global__ void gaussianBlurKernel(rgba *image, rgba **refImg, int width,
-                                   int height)
+__global__ void gaussianBlurKernel(rgba *dst_image, rgba *src_image, int width,
+                                   int height, size_t src_pitch, size_t dst_pitch)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x < width && y < height)
     {
-        int index = y * width + x;
-        float red = 0.0;
-        float green = 0.0;
-        float blue = 0.0;
-        float alpha = 0.0;
-        for (int k = -1; k <= 1; k++)
+        dst_image = (rgba *)((char *)dst_image + y * dst_pitch);
+        int index = x;
+
+        float red = 0.0f, green = 0.0f, blue = 0.0f;
+
+        for (int i = -1; i <= 1; i++)
         {
-            for (int l = -1; l <= 1; l++)
+            for (int j = -1; j <= 1; j++)
             {
-                if (y + k >= 0 && y + k < height && x + l >= 0 && x + l < width)
+                int x1 = x + i;
+                int y1 = y + j;
+                if (x1 >= 0 && x1 < width && y1 >= 0 && y1 < height)
                 {
-                    red += refImg[y + k][x + l].red * gfilter[k + 1][l + 1];
-                    green += refImg[y + k][x + l].green * gfilter[k + 1][l + 1];
-                    blue += refImg[y + k][x + l].blue * gfilter[k + 1][l + 1];
-                    alpha += refImg[y + k][x + l].alpha * gfilter[k + 1][l + 1];
+                    src_image = (rgba *)((char *)src_image + y1 * src_pitch);
+                    int index1 = x1;
+                    red += src_image[index1].red * gfilter[i + 1][j + 1];
+                    green += src_image[index1].green * gfilter[i + 1][j + 1];
+                    blue += src_image[index1].blue * gfilter[i + 1][j + 1];
                 }
             }
         }
-        image[index].red = red;
-        image[index].green = green;
-        image[index].blue = blue;
-        image[index].alpha = alpha;
+
+        dst_image[index].red = red;
+        dst_image[index].green = green;
+        dst_image[index].blue = blue;
     }
 }
 
@@ -112,26 +117,27 @@ __global__ void dilationKernel(rgba *image, bool **circleTable, rgba **refImg,
 }
 
 // call gray scale kernel
-void grayScaleGPU(rgba **image, int width, int height)
+void grayScaleGPU(rgba *image, int width, int height)
 {
-    rgba *d_image;
-    int size = width * sizeof(rgba);
-    cudaMalloc(&d_image, size * height);
-    for (int y = 0; y < height; y++)
-    {
-        cudaMemcpy(d_image + y * width, image[y], size, cudaMemcpyHostToDevice);
-    }
-    dim3 threadsPerBlock(32, 32);
-    dim3 numBlocks((width + threadsPerBlock.x - 1) / threadsPerBlock.x,
-                   (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    rgba *dst_image;
+    size_t pitch;
 
-    grayScaleKernel<<<numBlocks, threadsPerBlock>>>(d_image, width, height);
+    cudaMallocPitch(&dst_image, &pitch, width * sizeof(rgba), height);
+    cudaMemcpy2D(dst_image, pitch, image, width * sizeof(rgba), width * sizeof(rgba),
+                 height, cudaMemcpyHostToDevice);
 
-    for (int y = 0; y < height; y++)
-    {
-        cudaMemcpy(image[y], d_image + y * width, size, cudaMemcpyDeviceToHost);
-    }
-    cudaFree(d_image);
+    int bsize = 32;
+    int w = ceil((float)width / bsize);
+    int h = ceil((float)height / bsize);
+
+    dim3 threadsPerBlock(bsize, bsize);
+    dim3 numBlocks(w, h);
+
+    grayScaleKernel<<<numBlocks, threadsPerBlock>>>(dst_image, width, height, pitch);
+
+    cudaMemcpy2D(image, width * sizeof(rgba), dst_image, pitch, width * sizeof(rgba),
+                 height, cudaMemcpyDeviceToHost);
+    cudaFree(dst_image);
 }
 
 void imageDiffGPU(rgba **image, rgba **imageOther, int width, int height)
@@ -157,28 +163,32 @@ void imageDiffGPU(rgba **image, rgba **imageOther, int width, int height)
     cudaFree(d_image);
 }
 
-void GaussianBlurGPU(rgba **image, int width, int height)
+void gaussianBlurGPU(rgba *image, int width, int height)
 {
-    int line_size = width * sizeof(rgba);
-    rgba *d_image;
-    cudaMalloc(&d_image, height * width * sizeof(rgba));
-    for (int y = 0; y < height; y++)
-    {
-        cudaMemcpy(d_image + y * width, image[y], line_size,
-                   cudaMemcpyHostToDevice);
-    }
-    dim3 threadsPerBlock(32, 32);
-    dim3 numBlocks((width + threadsPerBlock.x - 1) / threadsPerBlock.x,
-                   (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    rgba *dst_image, *src_image;
+    size_t src_pitch, dst_pitch;
 
-    gaussianBlurKernel<<<numBlocks, threadsPerBlock>>>(d_image, image, width,
-                                                       height);
-    for (int y = 0; y < height; y++)
-    {
-        cudaMemcpy(image[y], d_image + y * width, line_size,
-                   cudaMemcpyDeviceToHost);
-    }
-    cudaFree(d_image);
+    cudaMallocPitch(&dst_image, &dst_pitch, width * sizeof(rgba), height);
+    cudaMallocPitch(&src_image, &src_pitch, width * sizeof(rgba), height);
+    
+    cudaMemcpy2D(dst_image, dst_pitch, image, width * sizeof(rgba), width * sizeof(rgba),
+                 height, cudaMemcpyHostToDevice);
+    cudaMemcpy2D(src_image, src_pitch, image, width * sizeof(rgba), width * sizeof(rgba),
+                 height, cudaMemcpyHostToDevice);
+
+    int bsize = 32;
+    int w = ceil((float)width / bsize);
+    int h = ceil((float)height / bsize);
+
+    dim3 threadsPerBlock(bsize, bsize);
+    dim3 numBlocks(w, h);
+
+    gaussianBlurKernel<<<numBlocks, threadsPerBlock>>>(dst_image, src_image, width, height, src_pitch, dst_pitch);
+
+    cudaMemcpy2D(image, width * sizeof(rgba), dst_image, dst_pitch, width * sizeof(rgba),
+                 height, cudaMemcpyDeviceToHost);
+    cudaFree(dst_image);
+    cudaFree(src_image);
 }
 
 void dilationGPU(rgba **image, int width, int height, int precision)

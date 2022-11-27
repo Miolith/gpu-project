@@ -8,6 +8,8 @@ SRC_TEST=test/*.cu\
 		 src/filters.cu\
 		 src/GPUfilters.cu
 
+.PHONY: test clean all testdebug
+
 # Check System for OSX Comptability Support
 OS=$(shell uname)
 
@@ -28,13 +30,19 @@ debug: CPPFLAGS += -g #-fsanitize=address
 debug: $(EXEC_NAME)
 
 test: CPPFLAGS += -O2
-test:
+test: testlol
+
+
+testlol:
 ifeq ($(OS),Darwin) # OSX
 	g++ $(SRC_TEST) $(COMPFLAGS) $(CPPFLAGS) -o test_suite
 else # Other
 	$(CC) $(SRC_TEST) $(CPPFLAGS) -o test_suite
 endif
 	./test_suite
+
+testdebug: CPPFLAGS += -g
+testdebug: testlol
 
 clean:
 	rm $(EXEC_NAME)

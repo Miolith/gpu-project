@@ -111,3 +111,17 @@ void saveImageGPU(const string &filename, rgba *image, int width, int height)
     }
     dest.save(filename.c_str());
 }
+
+rgba* flattenImageGPU(rgba** image, int width, int height)
+{
+    rgba* flatImage = new rgba[height * width];
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            flatImage[i * width + j] = image[i][j];
+        }
+    }
+
+    return flatImage;
+}
