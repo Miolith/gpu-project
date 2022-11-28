@@ -66,3 +66,5 @@ void imageDiffGPU(rgba *image, rgba *ref, int width, int height);
 void dilationGPU(rgba *image, int width, int height, int precision);
 
 bool *getCircleTableGPU(int diameter);
+
+void erosionGPU(rgba *image, int width, int height, int precision);

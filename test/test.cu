@@ -171,6 +171,21 @@ void testDilation(rgba** image, rgba* imageGPU, int precision, int width, int he
         cerr << "dilation() failed" << endl;
 }
 
+void testDilation(rgba** image, rgba* imageGPU, int precision, int width, int height)
+{
+    cerr << "Testing EROSION..." << endl;
+    cerr << "Applying CPU version erosion()" << endl;
+    erosion(image, height, width, precision);
+    cerr << "Applying GPU version erosionGPU()" << endl;
+    erosionGPU(imageGPU, height, width, precision);
+
+    // compare
+    if (compareImages(image, imageGPU, width, height))
+        cerr << "dilation() passed" << endl;
+    else
+        cerr << "dilation() failed" << endl;
+}
+
 int main()
 {
     int width = 1000;
