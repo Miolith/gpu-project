@@ -6,6 +6,7 @@
 #include "CImg.h"
 #include "draw.h"
 #include "tools.h"
+#include "cuda.h"
 
 using namespace std;
 using namespace cimg_library;
@@ -366,4 +367,155 @@ void basicThresholdGPU(rgba *image, int height, int width, uint8_t threshold)
                 height, cudaMemcpyDeviceToHost);
 
     cudaFree(dst_image);
+}
+
+__global__ void initLabelKernel(size_t *label_image, rgba *src_image, int width, int height, size_t img_pitch, size_t label_pitch)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height)
+    {
+        rgba *pixel = (rgba *)((char *)src_image + y * img_pitch);
+        size_t *label = (size_t *)((char *)label_image + y * label_pitch);
+        if (pixel[x].red == 0)
+        {
+            label[x] = 0;
+        }
+        else
+        {
+            label[x] = y * width + x + 1;
+        }
+    }
+}
+
+
+__device__ size_t my_min(size_t a, size_t b)
+{
+    return (a < b) ? a : b;
+}
+
+
+__global__ void propagateKernel(size_t *src_label, size_t *label_image, int width, int height, size_t pitch, bool *label_changed)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height)
+    {
+        size_t *label_line = (size_t *)((char *)src_label + y * pitch);
+        if (label_line[x] != 0)
+        {
+            size_t min_label = label_line[x];
+            for (int i = -1; i <= 1; i++)
+            {
+                size_t *label = (size_t *)((char *)src_label + (y + i) * pitch);
+                for (int j = -1; j <= 1; j++)
+                {
+                    if (x + j >= 0 && x + j < width && y + i >= 0 && y + i < height)
+                    {
+                        if (label[x + j] != 0)
+                        {
+                            min_label = my_min(min_label, label[x + j]);
+                        }
+                    }
+                }
+            }
+            if (min_label != label_line[x])
+            {
+                *label_changed = true;
+                printf("label changed\n");
+            }
+            size_t *label_dst = (size_t *)((char *)label_image + y * pitch);
+            label_dst[x] = min_label;
+        }
+    }
+}
+
+
+vector<vector<size_t>> connectCompenentGPU(rgba* img, int height, int width, set<size_t> &labelSet)
+{
+    rgba *src_image;
+    size_t *label_image, *src_label;
+    bool *label_changed;
+    bool label_changed_host = true;
+    vector<vector<size_t>> labelMatrix;
+    size_t *labelTable = new size_t[height * width];
+
+    size_t img_pitch, label_pitch;
+
+    cudaMallocPitch(&src_image, &img_pitch, width * sizeof(rgba), height);
+    cudaMallocPitch(&label_image, &label_pitch, width * sizeof(size_t), height);
+    cudaMallocPitch(&src_label, &label_pitch, width * sizeof(size_t), height);
+
+    cudaMalloc(&label_changed, sizeof(bool));
+    cudaMemcpy(label_changed, &label_changed_host, sizeof(bool), cudaMemcpyHostToDevice);
+    
+
+    cudaMemcpy2D(src_image, img_pitch, img, width * sizeof(rgba), width * sizeof(rgba),
+                height, cudaMemcpyHostToDevice);
+
+
+    // init label kernel
+    int bsize = 32;
+    int w = ceil((float)width / bsize);
+    int h = ceil((float)height / bsize);
+
+    dim3 threadsPerBlock(bsize, bsize);
+    dim3 numBlocks(w, h);
+
+    initLabelKernel<<<numBlocks, threadsPerBlock>>>(label_image, src_image, width, height, img_pitch, label_pitch);
+    cudaDeviceSynchronize();
+
+    cudaMemcpy2D(src_label, label_pitch, label_image, width * sizeof(size_t), width * sizeof(size_t),
+                height, cudaMemcpyDeviceToDevice);
+
+    while(label_changed_host)
+    {
+        label_changed_host = false;
+        cudaMemcpy(label_changed, &label_changed_host, sizeof(bool), cudaMemcpyHostToDevice);
+
+        // propagate kernel
+        propagateKernel<<<numBlocks, threadsPerBlock>>>(src_label, label_image, width, height, label_pitch, label_changed);
+        cudaDeviceSynchronize();
+
+        cudaMemcpy(&label_changed_host, label_changed, sizeof(bool), cudaMemcpyDeviceToHost);
+
+        cudaMemcpy2D(src_label, label_pitch, label_image, width * sizeof(size_t), width * sizeof(size_t),
+                    height, cudaMemcpyDeviceToDevice);
+
+    }
+
+    cudaMemcpy2D(labelTable, width * sizeof(size_t), src_label, label_pitch, width * sizeof(size_t),
+                height, cudaMemcpyDeviceToHost);
+
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            if (labelTable[i * width + j] != 0)
+            {
+                labelSet.insert(labelTable[i * width + j]);
+            }
+        }
+    }
+    
+    // fill label matrix with labelTable
+    for (int i = 0; i < height; i++)
+    {
+        vector<size_t> labelVector;
+        for (int j = 0; j < width; j++)
+        {
+            labelVector.push_back(labelTable[i * width + j]);
+        }
+        labelMatrix.push_back(labelVector);
+    }
+
+
+    cudaFree(src_image);
+    cudaFree(label_image);
+    cudaFree(src_label);
+    free(labelTable);
+    
+    return labelMatrix;
 }

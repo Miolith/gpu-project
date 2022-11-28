@@ -60,8 +60,8 @@ rgba** createTestImage(rgba** ref, int width, int height)
 
     int x = width / 2;
     int y = height / 2;
-    int w = 100;
-    int h = 100;
+    int w = 8;
+    int h = 8;
     int r = 255;
     int g = 0;
     int b = 0;
@@ -201,10 +201,39 @@ void testBasicThreshold(rgba** image, rgba* imageGPU, uint8_t threshold, int wid
         cerr << "basicThreshold() failed" << endl;
 }
 
+void testLabelComponents(rgba** image, rgba* imageGPU, int width, int height)
+{
+    set<int> labelSet = set<int>();
+    set<size_t> labelSetGPU = set<size_t>();
+
+    cerr << "Testing LABEL COMPONENTS..." << endl;
+    cerr << "Applying CPU version labelComponents()" << endl;
+    connectCompenent(image, height, width, labelSet);
+    cerr << "Applying GPU version labelComponentsGPU()" << endl;
+    connectCompenentGPU(imageGPU, height, width, labelSetGPU);
+
+    // print sets
+    cerr << "CPU labels: ";
+    for (set<int>::iterator it = labelSet.begin(); it != labelSet.end(); it++)
+        cerr << *it << " ";
+    cerr << endl;
+
+    cerr << "GPU labels: ";
+    for (set<size_t>::iterator it = labelSetGPU.begin(); it != labelSetGPU.end(); it++)
+        cerr << *it << " ";
+    cerr << endl;
+
+    // compare
+    if (labelSet.size() == labelSetGPU.size())
+        cerr << "labelComponents() passed" << endl;
+    else
+        cerr << "labelComponents() failed" << endl;
+}
+
 int main()
 {
-    int width = 300;
-    int height = 300;
+    int width = 10;
+    int height = 10;
 
     rgba** ref = createRefImage(width, height);
     rgba** image = createTestImage(ref, width, height);
@@ -235,20 +264,22 @@ int main()
     saveImage("test_image_diff.png", image, width, height);
     saveImageGPU("test_image_diff_gpu.png", imageGPU, width, height);
     
-    testDilation(image, imageGPU, 10, width, height);
+    testDilation(image, imageGPU, 1, width, height);
 
     saveImage("test_image_dilation.png", image, width, height);
     saveImageGPU("test_image_dilation_gpu.png", imageGPU, width, height);
     
-    testErosion(image, imageGPU, 10, width, height);
+    testErosion(image, imageGPU, 1, width, height);
 
     saveImage("test_image_erosion.png", image, width, height);
     saveImageGPU("test_image_erosion_gpu.png", imageGPU, width, height);
 
-    testBasicThreshold(image, imageGPU, 30, width, height);
+    testBasicThreshold(image, imageGPU, 20, width, height);
 
     saveImage("test_image_threshold.png", image, width, height);
     saveImageGPU("test_image_threshold_gpu.png", imageGPU, width, height);
+
+    testLabelComponents(image, imageGPU, width, height);
 
     unloadImage(ref, height);
     unloadImage(image, height);

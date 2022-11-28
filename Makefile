@@ -31,7 +31,7 @@ debug: $(EXEC_NAME)
 
 test: CPPFLAGS += -O2
 test: testlol
-
+	./test_suite
 
 testlol:
 ifeq ($(OS),Darwin) # OSX
@@ -39,7 +39,6 @@ ifeq ($(OS),Darwin) # OSX
 else # Other
 	$(CC) $(SRC_TEST) $(CPPFLAGS) -o test_suite
 endif
-	./test_suite
 
 testdebug: CPPFLAGS += -g -G
 testdebug: testlol
