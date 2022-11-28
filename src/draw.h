@@ -73,5 +73,9 @@ void basicThresholdGPU(rgba *image, int height, int width, uint8_t threshold);
 vector<vector<size_t>> connectCompenentGPU(rgba* img, int height, int width, set<size_t> &labelSet);
 
 
-void show_componentsGPU(rgba *img, size_t* labelTable, int width,
+void show_componentsGPU(rgba *img, vector<vector<size_t>> labelTable, int width,
                      int height, set<size_t> &labelSet);
+
+vector<vector<int>>
+component_box_detectionGPU(vector<vector<size_t>> components, int width, int height,
+                        set<size_t> &labelSet);

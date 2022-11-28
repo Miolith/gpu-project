@@ -277,7 +277,7 @@ void dilationGPU(rgba *image, int width, int height, int precision)
     cudaFree(dst_image);
     cudaFree(src_image);
     cudaFree(circleTableCuda);
-    free(circleTable);
+    delete circleTable;
     return;
 }
 
@@ -431,19 +431,6 @@ __global__ void propagateKernel(size_t *src_label, size_t *label_image, int widt
     }
 }
 
-rgba* copyImage(rgba* image, int width, int height)
-{
-    rgba* copy = new rgba[height * width];
-    for (int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
-        {
-            copy[i * width + j] = image[i * width + j];
-        }
-    }
-    return copy;
-}
-
 vector<vector<size_t>> connectCompenentGPU(rgba* img, int height, int width, set<size_t> &labelSet)
 {
     rgba *src_image;
@@ -527,7 +514,6 @@ vector<vector<size_t>> connectCompenentGPU(rgba* img, int height, int width, set
     cudaFree(label_image);
     cudaFree(src_label);
     free(labelTable);
-    //free(copy);
     
     return labelMatrix;
 }

@@ -8,7 +8,7 @@ SRC_TEST=test/*.cu\
 		 src/filters.cu\
 		 src/GPUfilters.cu
 
-.PHONY: test clean all testdebug
+.PHONY: test clean all testdebug $(EXEC_NAME)
 
 # Check System for OSX Comptability Support
 OS=$(shell uname)
