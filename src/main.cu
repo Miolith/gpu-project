@@ -27,29 +27,31 @@ boxList findBox(rgba** ref, int w, int h, char *image)
     assert(w == width && h == height);
 
     grayScale(img, width, height);
+    SAVE_IMAGE("patate_grayscale.png", img);
     gaussianBlur(img, width, height);
+    SAVE_IMAGE("patate_blur.png", img);
 
     imageDiff(ref, img, width, height);
-    saveImage("patate_diff.png", img, width, height);
+    SAVE_IMAGE("patate_diff.png", img);
 
-    // Fermeture
+    // CLOSING
     dilation(img, height, width, 20);
     erosion(img, height, width, 20);
-    saveImage("patate_closing.png", img, width, height);
+    SAVE_IMAGE("patate_closing.png", img);
 
-    // Ouverture
+    // OPENING
     erosion(img, height, width, 50);
     dilation(img, height, width, 50);
-    saveImage("patate_opening.png", img, width, height);
+    SAVE_IMAGE("patate_opening.png", img);
     
     basic_threshold(img, height, width, 70);
+    SAVE_IMAGE("patate_afterthresh.png", img);
     
-    saveImage("patate_afterthresh.png", img, width, height);
     set<int> label_list;
     vector<vector<int>> labels = connectCompenent(img, height, width, label_list);
     
     show_components(img, labels, width, height, label_list);
-    saveImage("patate_color.png", img, width, height);
+    SAVE_IMAGE("patate_color.png", img);
 
     for(auto boxe: component_box_detection(labels, width, height, label_list))
     {
