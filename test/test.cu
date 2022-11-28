@@ -171,7 +171,7 @@ void testDilation(rgba** image, rgba* imageGPU, int precision, int width, int he
         cerr << "dilation() failed" << endl;
 }
 
-void testDilation(rgba** image, rgba* imageGPU, int precision, int width, int height)
+void testErosion(rgba** image, rgba* imageGPU, int precision, int width, int height)
 {
     cerr << "Testing EROSION..." << endl;
     cerr << "Applying CPU version erosion()" << endl;
@@ -188,8 +188,8 @@ void testDilation(rgba** image, rgba* imageGPU, int precision, int width, int he
 
 int main()
 {
-    int width = 1000;
-    int height = 1000;
+    int width = 300;
+    int height = 300;
 
     rgba** ref = createRefImage(width, height);
     rgba** image = createTestImage(ref, width, height);
@@ -225,6 +225,11 @@ int main()
     saveImage("test_image_dilation.png", image, width, height);
     saveImageGPU("test_image_dilation_gpu.png", imageGPU, width, height);
     
+    testErosion(image, imageGPU, 10, width, height);
+
+    saveImage("test_image_erosion.png", image, width, height);
+    saveImageGPU("test_image_erosion_gpu.png", imageGPU, width, height);
+
     unloadImage(ref, height);
     unloadImage(image, height);
     unloadImage(imageCopy, height);

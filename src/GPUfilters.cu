@@ -153,9 +153,9 @@ __global__ void erosionKernel(rgba *dst_image, rgba *src_image, int width,
                     mini = img[new_x].red;
             }
         }
-        dst_image[index].red = maxi;
-        dst_image[index].green = maxi;
-        dst_image[index].blue = maxi;
+        dst_image[index].red = mini;
+        dst_image[index].green = mini;
+        dst_image[index].blue = mini;
     }
 }
 // call gray scale kernel
