@@ -37,9 +37,9 @@ bool *getCircleTableGPU(int diameter)
     bool *circleTable = new bool[diameter * diameter];
     int r2 = radius * radius;
     
-    for (int i = 0; i <= diameter; i++)
+    for (int i = 0; i < diameter; i++)
     {
-        for (int j = 0; j <= diameter; j++)
+        for (int j = 0; j < diameter; j++)
         {
             int x = i - radius;
             int y = j - radius;
