@@ -95,7 +95,7 @@ __global__ void imageDiffKernel(rgba *dst_image, rgba *ref, int width, int heigh
 }
 
 __global__ void dilationKernel(rgba *dst_image, rgba *src_image, int width,
-                            int height, size_t pitch, int precision, bool* circleTable) 
+                            int height, size_t pitch, int precision, bool* circleTable, size_t circlePitch) 
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -111,8 +111,9 @@ __global__ void dilationKernel(rgba *dst_image, rgba *src_image, int width,
             {
                 int new_y = y + yoffset;
                 int new_x = x + xoffset;
+                bool* circle = (bool *)((char *)circleTable + (yoffset + precision) * circlePitch);
                 if (new_y < 0 || new_y >= height || new_x < 0 || new_x >= width
-                    || circleTable[(yoffset + precision) * (precision * 2 + 1) + xoffset + precision])
+                    || circle[xoffset + precision])
                     continue;
 
                 rgba* img = (rgba *)((char *)src_image + new_y * pitch);
@@ -128,7 +129,7 @@ __global__ void dilationKernel(rgba *dst_image, rgba *src_image, int width,
 }
 
 __global__ void erosionKernel(rgba *dst_image, rgba *src_image, int width,
-                            int height, size_t pitch, int precision, bool* circleTable) 
+                            int height, size_t pitch, int precision, bool* circleTable, size_t circlePitch) 
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -144,8 +145,9 @@ __global__ void erosionKernel(rgba *dst_image, rgba *src_image, int width,
             {
                 int new_y = y + yoffset;
                 int new_x = x + xoffset;
+                bool* circle = (bool *)((char *)circleTable + (yoffset + precision) * circlePitch);
                 if (new_y < 0 || new_y >= height || new_x < 0 || new_x >= width
-                    || circleTable[(yoffset + precision) * (precision * 2 + 1) + xoffset + precision])
+                    || circle[xoffset + precision])
                     continue;
 
                 rgba* img = (rgba *)((char *)src_image + new_y * pitch);
@@ -250,17 +252,18 @@ void dilationGPU(rgba *image, int width, int height, int precision)
 
     rgba *dst_image, *src_image;
 
-    size_t pitch;
+    size_t pitch, circlePitch;
 
     cudaMallocPitch(&dst_image, &pitch, width * sizeof(rgba), height);
     cudaMallocPitch(&src_image, &pitch, width * sizeof(rgba), height);
-    cudaMalloc(&circleTableCuda, (2 * precision + 1) * (2 * precision + 1) * sizeof(bool));
+    cudaMallocPitch(&circleTableCuda, &circlePitch, (2 * precision + 1) * sizeof(bool), 2 * precision + 1);
 
     cudaMemcpy2D(dst_image, pitch, image, width * sizeof(rgba), width * sizeof(rgba),
                 height, cudaMemcpyHostToDevice);
     cudaMemcpy2D(src_image, pitch, image, width * sizeof(rgba), width * sizeof(rgba),
                 height, cudaMemcpyHostToDevice);
-    cudaMemcpy(circleTableCuda, circleTable, (2 * precision + 1) * (2 * precision + 1) * sizeof(bool), cudaMemcpyHostToDevice);
+    cudaMemcpy2D(circleTableCuda, circlePitch, circleTable, (2 * precision + 1) * sizeof(bool),
+                (2 * precision + 1) * sizeof(bool), 2 * precision + 1, cudaMemcpyHostToDevice);
 
     int bsize = 32;
     int w = ceil((float)width / bsize);
@@ -269,7 +272,8 @@ void dilationGPU(rgba *image, int width, int height, int precision)
     dim3 threadsPerBlock(bsize, bsize);
     dim3 numBlocks(w, h);
 
-    dilationKernel<<<numBlocks, threadsPerBlock>>>(dst_image, src_image, width, height, pitch, precision, circleTableCuda);
+    dilationKernel<<<numBlocks, threadsPerBlock>>>(dst_image, src_image, width, height, 
+                                pitch, precision, circleTableCuda, circlePitch);
     cudaDeviceSynchronize();
 
     cudaMemcpy2D(image, width * sizeof(rgba), dst_image, pitch, width * sizeof(rgba),
@@ -288,17 +292,18 @@ void erosionGPU(rgba *image, int width, int height, int precision)
 
     rgba *dst_image, *src_image;
 
-    size_t pitch;
+    size_t pitch, circlePitch;
 
     cudaMallocPitch(&dst_image, &pitch, width * sizeof(rgba), height);
     cudaMallocPitch(&src_image, &pitch, width * sizeof(rgba), height);
-    cudaMalloc(&circleTableCuda, (2 * precision + 1) * (2 * precision + 1) * sizeof(bool));
+    cudaMallocPitch(&circleTableCuda, &circlePitch, (2 * precision + 1) * sizeof(bool), 2 * precision + 1);
 
     cudaMemcpy2D(dst_image, pitch, image, width * sizeof(rgba), width * sizeof(rgba),
                 height, cudaMemcpyHostToDevice);
     cudaMemcpy2D(src_image, pitch, image, width * sizeof(rgba), width * sizeof(rgba),
                 height, cudaMemcpyHostToDevice);
-    cudaMemcpy(circleTableCuda, circleTable, (2 * precision + 1) * (2 * precision + 1) * sizeof(bool), cudaMemcpyHostToDevice);
+    cudaMemcpy2D(circleTableCuda, circlePitch, circleTable, (2 * precision + 1) * sizeof(bool),
+                (2 * precision + 1) * sizeof(bool), 2 * precision + 1, cudaMemcpyHostToDevice);
 
     int bsize = 32;
     int w = ceil((float)width / bsize);
@@ -307,7 +312,8 @@ void erosionGPU(rgba *image, int width, int height, int precision)
     dim3 threadsPerBlock(bsize, bsize);
     dim3 numBlocks(w, h);
 
-    erosionKernel<<<numBlocks, threadsPerBlock>>>(dst_image, src_image, width, height, pitch, precision, circleTableCuda);
+    erosionKernel<<<numBlocks, threadsPerBlock>>>(dst_image, src_image, width, height, 
+                                pitch, precision, circleTableCuda, circlePitch);
     cudaDeviceSynchronize();
 
     cudaMemcpy2D(image, width * sizeof(rgba), dst_image, pitch, width * sizeof(rgba),
@@ -315,7 +321,7 @@ void erosionGPU(rgba *image, int width, int height, int precision)
     cudaFree(dst_image);
     cudaFree(src_image);
     cudaFree(circleTableCuda);
-    free(circleTable);
+    delete circleTable;
     return;
 }
 

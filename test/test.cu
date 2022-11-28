@@ -130,9 +130,9 @@ void testGrayScale(rgba** image, rgba* imageGPU, int width, int height)
 {
     cerr << "Testing GRAY SCALE..." << endl;
     cerr << "Applying CPU version grayScale()" << endl;
-    grayScale(image, height, width);
+    grayScale(image, width, height);
     cerr << "Applying GPU version grayScaleGPU()" << endl;
-    grayScaleGPU(imageGPU, height, width);
+    grayScaleGPU(imageGPU, width, height);
 
     // compare
     if (compareImages(image, imageGPU, width, height))
@@ -146,9 +146,9 @@ void testGaussianBlur(rgba** image, rgba* imageGPU, int width, int height)
     cerr << "Testing GAUSSIAN BLUR..." << endl;
     
     cerr << "Applying CPU version gaussianBlur()" << endl;
-    gaussianBlur(image, height, width);
+    gaussianBlur(image, width, height);
     cerr << "Applying GPU version gaussianBlurGPU()" << endl;
-    gaussianBlurGPU(imageGPU, height, width);
+    gaussianBlurGPU(imageGPU, width, height);
 
     // compare
     if (compareImages(image, imageGPU, width, height))
@@ -161,9 +161,9 @@ void testImageDiff(rgba** ref, rgba** image, rgba* refGPU, rgba* imageGPU, int w
 {
     cerr << "Testing IMAGE DIFF..." << endl;
     cerr << "Applying CPU version imageDiff()" << endl;
-    imageDiff(ref, image, height, width);
+    imageDiff(ref, image, width, height);
     cerr << "Applying GPU version imageDiffGPU()" << endl;
-    imageDiffGPU(refGPU, imageGPU, height, width);
+    imageDiffGPU(refGPU, imageGPU, width, height);
 
     // compare
     if (compareImages(image, imageGPU, width, height))
@@ -178,7 +178,7 @@ void testDilation(rgba** image, rgba* imageGPU, int precision, int width, int he
     cerr << "Applying CPU version dilation()" << endl;
     dilation(image, height, width, precision);
     cerr << "Applying GPU version dilationGPU()" << endl;
-    dilationGPU(imageGPU, height, width, precision);
+    dilationGPU(imageGPU, width, height, precision);
 
     // compare
     if (compareImages(image, imageGPU, width, height))
@@ -193,7 +193,7 @@ void testErosion(rgba** image, rgba* imageGPU, int precision, int width, int hei
     cerr << "Applying CPU version erosion()" << endl;
     erosion(image, height, width, precision);
     cerr << "Applying GPU version erosionGPU()" << endl;
-    erosionGPU(imageGPU, height, width, precision);
+    erosionGPU(imageGPU, width, height, precision);
 
     // compare
     if (compareImages(image, imageGPU, width, height))
@@ -248,8 +248,8 @@ void testLabelComponents(rgba** image, rgba* imageGPU, int width, int height)
 
 int main()
 {
-    int width = 1000;
-    int height = 1000;
+    int width = 1200;
+    int height = 900;
 
     rgba** ref = createRefImage(width, height);
     rgba** image = createTestImage(ref, width, height);
@@ -261,8 +261,8 @@ int main()
 
     testGrayScale(image, imageGPU, width, height);
 
-    grayScale(ref, height, width);
-    grayScaleGPU(refGPU, height, width);
+    grayScale(ref, width, height);
+    grayScaleGPU(refGPU, width, height);
 
     saveImage("test_image_gray.png", image, width, height);
     saveImageGPU("test_image_gray_gpu.png", imageGPU, width, height);
@@ -272,20 +272,20 @@ int main()
     saveImage("test_image_blur.png", image, width, height);
     saveImageGPU("test_image_blur_gpu.png", imageGPU, width, height);
 
-    gaussianBlur(ref, height, width);
-    gaussianBlurGPU(refGPU, height, width);
+    gaussianBlur(ref, width, height);
+    gaussianBlurGPU(refGPU, width, height);
 
     testImageDiff(ref, image, refGPU, imageGPU, width, height);
 
     saveImage("test_image_diff.png", image, width, height);
     saveImageGPU("test_image_diff_gpu.png", imageGPU, width, height);
     
-    testDilation(image, imageGPU, 10, width, height);
+    testDilation(image, imageGPU, 20, width, height);
 
     saveImage("test_image_dilation.png", image, width, height);
     saveImageGPU("test_image_dilation_gpu.png", imageGPU, width, height);
     
-    testErosion(image, imageGPU, 10, width, height);
+    testErosion(image, imageGPU, 20, width, height);
 
     saveImage("test_image_erosion.png", image, width, height);
     saveImageGPU("test_image_erosion_gpu.png", imageGPU, width, height);

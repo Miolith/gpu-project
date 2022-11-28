@@ -40,7 +40,7 @@ boxList findBox(rgba** ref, int w, int h, char *image)
     dilation(img, height, width, 50);
     saveImage("patate_opening.png", img, width, height);
     
-    basic_threshold(img, height, width, 40);
+    basic_threshold(img, height, width, 70);
     
     saveImage("patate_afterthresh.png", img, width, height);
     set<int> label_list;
@@ -76,16 +76,16 @@ boxList findBoxGPU(rgba* ref, int w, int h, char *image)
     saveImageGPU("patate_diff.png", img, width, height);
 
     // CLOSING
-    dilationGPU(img, height, width, 20);
-    erosionGPU(img, height, width, 20);
+    dilationGPU(img, width, height, 20);
+    erosionGPU(img, width, height, 20);
     saveImageGPU("patate_closing.png", img, width, height);
 
     // OPENING
-    erosionGPU(img, height, width, 50);
-    dilationGPU(img, height, width, 50);
+    erosionGPU(img, width, height, 50);
+    dilationGPU(img, width, height, 50);
     saveImageGPU("patate_opening.png", img, width, height);
     
-    basicThresholdGPU(img, height, width, 40);
+    basicThresholdGPU(img, height, width, 70);
     
     saveImageGPU("patate_afterthresh.png", img, width, height);
     set<size_t> label_list;
