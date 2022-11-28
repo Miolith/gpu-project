@@ -317,3 +317,53 @@ void erosionGPU(rgba *image, int width, int height, int precision)
     free(circleTable);
     return;
 }
+
+
+__global__ void basicThresholdKernel(rgba *image, int width, int height, size_t pitch, uint8_t threshold)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height)
+    {
+        rgba *pixel = (rgba *)((char *)image + y * pitch);
+        if (pixel[x].red < threshold)
+        {
+            pixel[x].red = 0;
+            pixel[x].green = 0;
+            pixel[x].blue = 0;
+        }
+        else
+        {
+            pixel[x].red = 255;
+            pixel[x].green = 255;
+            pixel[x].blue = 255;
+        }
+    }
+}
+
+void basicThresholdGPU(rgba *image, int height, int width, uint8_t threshold)
+{
+    rgba *dst_image;
+    size_t pitch;
+
+    cudaMallocPitch(&dst_image, &pitch, width * sizeof(rgba), height);
+
+    cudaMemcpy2D(dst_image, pitch, image, width * sizeof(rgba), width * sizeof(rgba),
+                height, cudaMemcpyHostToDevice);
+
+    int bsize = 32;
+    int w = ceil((float)width / bsize);
+    int h = ceil((float)height / bsize);
+
+    dim3 threadsPerBlock(bsize, bsize);
+    dim3 numBlocks(w, h);
+
+    basicThresholdKernel<<<numBlocks, threadsPerBlock>>>(dst_image, width, height, pitch, threshold);
+    cudaDeviceSynchronize();
+
+    cudaMemcpy2D(image, width * sizeof(rgba), dst_image, pitch, width * sizeof(rgba),
+                height, cudaMemcpyDeviceToHost);
+
+    cudaFree(dst_image);
+}

@@ -68,3 +68,4 @@ void dilationGPU(rgba *image, int width, int height, int precision);
 bool *getCircleTableGPU(int diameter);
 
 void erosionGPU(rgba *image, int width, int height, int precision);
+void basicThresholdGPU(rgba *image, int height, int width, uint8_t threshold);

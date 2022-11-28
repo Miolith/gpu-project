@@ -181,9 +181,24 @@ void testErosion(rgba** image, rgba* imageGPU, int precision, int width, int hei
 
     // compare
     if (compareImages(image, imageGPU, width, height))
-        cerr << "dilation() passed" << endl;
+        cerr << "erosion() passed" << endl;
     else
-        cerr << "dilation() failed" << endl;
+        cerr << "erosion() failed" << endl;
+}
+
+void testBasicThreshold(rgba** image, rgba* imageGPU, uint8_t threshold, int width, int height)
+{
+    cerr << "Testing BASIC THRESHOLD..." << endl;
+    cerr << "Applying CPU version basicThreshold()" << endl;
+    basic_threshold(image, height, width, threshold);
+    cerr << "Applying GPU version basicThresholdGPU()" << endl;
+    basicThresholdGPU(imageGPU, height, width, threshold);
+
+    // compare
+    if (compareImages(image, imageGPU, width, height))
+        cerr << "basicThreshold() passed" << endl;
+    else
+        cerr << "basicThreshold() failed" << endl;
 }
 
 int main()
@@ -229,6 +244,11 @@ int main()
 
     saveImage("test_image_erosion.png", image, width, height);
     saveImageGPU("test_image_erosion_gpu.png", imageGPU, width, height);
+
+    testBasicThreshold(image, imageGPU, 30, width, height);
+
+    saveImage("test_image_threshold.png", image, width, height);
+    saveImageGPU("test_image_threshold_gpu.png", imageGPU, width, height);
 
     unloadImage(ref, height);
     unloadImage(image, height);
