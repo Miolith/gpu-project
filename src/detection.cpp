@@ -16,13 +16,14 @@ void show_components(rgba **img, vector<vector<int>> comp, int width,
 {
     int slice = 300 / (labelSet.size());
     HSL rainbow(100, 1, 0.5);
+    int num = 1;
     for (auto &i : labelSet)
     {
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
-                rainbow.H = (20 + slice * i) % 360;
+                rainbow.H = (30 + slice * num) % 360;
                 if (comp[y][x] == i)
                 {
                     img[y][x].red = HSLToRGB(rainbow).R;
@@ -31,6 +32,7 @@ void show_components(rgba **img, vector<vector<int>> comp, int width,
                 }
             }
         }
+        num++;
     }
 }
 
@@ -39,13 +41,14 @@ void show_componentsGPU(rgba *img, vector<vector<size_t>> labelTable, int width,
 {
     int slice = 300 / (labelSet.size());
     HSL rainbow(100, 1, 0.5);
+    int num = 1;
     for (auto &i : labelSet)
     {
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
-                rainbow.H = (20 + slice * i) % 360;
+                rainbow.H = (30 + slice * num) % 360;
                 if (labelTable[y][x] == i)
                 {
                     img[y * width + x].red = HSLToRGB(rainbow).R;
@@ -54,6 +57,7 @@ void show_componentsGPU(rgba *img, vector<vector<size_t>> labelTable, int width,
                 }
             }
         }
+        num++;
     }
 }
 std::vector<std::vector<int>>

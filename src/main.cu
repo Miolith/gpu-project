@@ -9,7 +9,9 @@
 
 #define GPU 1
 #define CPU 0
-
+#define DEBUG false
+#define SAVE_IMAGE(filename, img) if (DEBUG) saveImage(filename, img, width, height);
+#define SAVE_IMAGE_GPU(filename, img) if (DEBUG) saveImageGPU(filename, img, width, height);
 using namespace std;
 using namespace cimg_library;
 
@@ -62,7 +64,6 @@ boxList findBox(rgba** ref, int w, int h, char *image)
 boxList findBoxGPU(rgba* ref, int w, int h, char *image)
 {
     boxList box;
-
     int width, height;
 
     rgba *img = loadImageGPU(image, &width, &height);
@@ -70,28 +71,30 @@ boxList findBoxGPU(rgba* ref, int w, int h, char *image)
     assert(w == width && h == height);
 
     grayScaleGPU(img, width, height);
+    SAVE_IMAGE_GPU("patate_gray.png", img);
     gaussianBlurGPU(img, width, height);
+    SAVE_IMAGE_GPU("patate_blur.png", img);
 
     imageDiffGPU(ref, img, width, height);
-    saveImageGPU("patate_diff.png", img, width, height);
+    SAVE_IMAGE_GPU("patate_diff.png", img);
 
     // CLOSING
     dilationGPU(img, width, height, 20);
     erosionGPU(img, width, height, 20);
-    saveImageGPU("patate_closing.png", img, width, height);
+    SAVE_IMAGE_GPU("patate_closing.png", img);
 
     // OPENING
     erosionGPU(img, width, height, 50);
     dilationGPU(img, width, height, 50);
-    saveImageGPU("patate_opening.png", img, width, height);
+    SAVE_IMAGE_GPU("patate_opening.png", img);
     
     basicThresholdGPU(img, height, width, 70);
-    
-    saveImageGPU("patate_afterthresh.png", img, width, height);
+    SAVE_IMAGE_GPU("patate_afterthresh.png", img);
+
     set<size_t> label_list;
     vector<vector<size_t>> labels = connectCompenentGPU(img, height, width, label_list);
     show_componentsGPU(img, labels, width, height, label_list);
-    saveImageGPU("patate_color.png", img, width, height);
+    SAVE_IMAGE_GPU("patate_color.png", img);
 
     for(auto boxe: component_box_detectionGPU(labels, width, height, label_list))
     {
