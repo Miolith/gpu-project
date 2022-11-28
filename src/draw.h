@@ -17,10 +17,7 @@ struct rgba
 using boxList = std::vector<std::vector<int>>;
 using boxMap = std::map<std::string, boxList>;
 
-
 using namespace std;
-using namespace cimg_library;
-
 
 void imageDiff(rgba **imageRef, rgba **imageOther, int width, int height);
 

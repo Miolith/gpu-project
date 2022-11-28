@@ -1,5 +1,5 @@
 CC=nvcc
-CPPFLAGS=-L/usr/X11R6/lib -lm -lpthread -lX11
+CPPFLAGS=-lm
 COMPFLAGS=-std=c++11
 SRC=src/*.cpp src/*.cu
 EXEC_NAME=main

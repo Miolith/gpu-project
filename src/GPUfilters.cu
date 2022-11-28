@@ -3,13 +3,11 @@
 #include <iostream>
 #include <set>
 
-#include "CImg.h"
 #include "draw.h"
 #include "tools.h"
 #include "cuda.h"
 
 using namespace std;
-using namespace cimg_library;
 
 __global__ void grayScaleKernel(rgba *image, int width, int height, size_t pitch)
 {
