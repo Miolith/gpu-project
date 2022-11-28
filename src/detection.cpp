@@ -34,6 +34,29 @@ void show_components(rgba **img, vector<vector<int>> comp, int width,
     }
 }
 
+void show_componentsGPU(rgba *img, size_t *labelTable, int width,
+                     int height, set<size_t> &labelSet)
+{
+    int slice = 300 / (labelSet.size());
+    HSL rainbow(100, 1, 0.5);
+    for (auto i : labelSet)
+    {
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                rainbow.H = (20 + slice * i) % 360;
+                if (labelTable[y * width + x] == i)
+                {
+                    img[y * width + x].red = HSLToRGB(rainbow).R;
+                    img[y * width + x].blue = HSLToRGB(rainbow).B;
+                    img[y * width + x].green = HSLToRGB(rainbow).G;
+                }
+            }
+        }
+    }
+}
+
 std::vector<std::vector<int>>
 component_box_detection(vector<vector<int>> components, int width, int height,
                         set<int> &labelSet)

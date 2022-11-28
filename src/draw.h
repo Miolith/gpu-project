@@ -71,3 +71,7 @@ void erosionGPU(rgba *image, int width, int height, int precision);
 void basicThresholdGPU(rgba *image, int height, int width, uint8_t threshold);
 
 vector<vector<size_t>> connectCompenentGPU(rgba* img, int height, int width, set<size_t> &labelSet);
+
+
+void show_componentsGPU(rgba *img, size_t* labelTable, int width,
+                     int height, set<size_t> &labelSet);

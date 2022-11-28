@@ -396,7 +396,7 @@ __device__ size_t my_min(size_t a, size_t b)
 }
 
 
-__global__ void propagateKernel(size_t *src_label, size_t *label_image, int width, int height, size_t pitch, bool *label_changed)
+__global__ void propagateKernel(size_t *src_label, size_t *label_image, int width, int height, size_t pitch,volatile bool *label_changed)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -424,7 +424,6 @@ __global__ void propagateKernel(size_t *src_label, size_t *label_image, int widt
             if (min_label != label_line[x])
             {
                 *label_changed = true;
-                printf("label changed\n");
             }
             size_t *label_dst = (size_t *)((char *)label_image + y * pitch);
             label_dst[x] = min_label;
@@ -432,6 +431,18 @@ __global__ void propagateKernel(size_t *src_label, size_t *label_image, int widt
     }
 }
 
+rgba* copyImage(rgba* image, int width, int height)
+{
+    rgba* copy = new rgba[height * width];
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            copy[i * width + j] = image[i * width + j];
+        }
+    }
+    return copy;
+}
 
 vector<vector<size_t>> connectCompenentGPU(rgba* img, int height, int width, set<size_t> &labelSet)
 {
@@ -464,11 +475,8 @@ vector<vector<size_t>> connectCompenentGPU(rgba* img, int height, int width, set
     dim3 threadsPerBlock(bsize, bsize);
     dim3 numBlocks(w, h);
 
-    initLabelKernel<<<numBlocks, threadsPerBlock>>>(label_image, src_image, width, height, img_pitch, label_pitch);
+    initLabelKernel<<<numBlocks, threadsPerBlock>>>(src_label, src_image, width, height, img_pitch, label_pitch);
     cudaDeviceSynchronize();
-
-    cudaMemcpy2D(src_label, label_pitch, label_image, width * sizeof(size_t), width * sizeof(size_t),
-                height, cudaMemcpyDeviceToDevice);
 
     while(label_changed_host)
     {
@@ -481,12 +489,12 @@ vector<vector<size_t>> connectCompenentGPU(rgba* img, int height, int width, set
 
         cudaMemcpy(&label_changed_host, label_changed, sizeof(bool), cudaMemcpyDeviceToHost);
 
-        cudaMemcpy2D(src_label, label_pitch, label_image, width * sizeof(size_t), width * sizeof(size_t),
+        cudaMemcpy2D(src_label, label_pitch, label_image, label_pitch, width * sizeof(size_t),
                     height, cudaMemcpyDeviceToDevice);
 
     }
 
-    cudaMemcpy2D(labelTable, width * sizeof(size_t), src_label, label_pitch, width * sizeof(size_t),
+    cudaMemcpy2D(labelTable, width * sizeof(size_t), label_image, label_pitch, width * sizeof(size_t),
                 height, cudaMemcpyDeviceToHost);
 
     for (int i = 0; i < height; i++)
@@ -499,6 +507,9 @@ vector<vector<size_t>> connectCompenentGPU(rgba* img, int height, int width, set
             }
         }
     }
+
+    /*show_componentsGPU(img, labelTable, height, width, labelSet);
+    saveImageGPU("result.png", img, height, width);*/
     
     // fill label matrix with labelTable
     for (int i = 0; i < height; i++)
@@ -516,6 +527,7 @@ vector<vector<size_t>> connectCompenentGPU(rgba* img, int height, int width, set
     cudaFree(label_image);
     cudaFree(src_label);
     free(labelTable);
+    //free(copy);
     
     return labelMatrix;
 }

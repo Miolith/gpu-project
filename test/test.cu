@@ -60,12 +60,11 @@ rgba** createTestImage(rgba** ref, int width, int height)
 
     int x = width / 2;
     int y = height / 2;
-    int w = 8;
-    int h = 8;
+    int w = 100;
+    int h = 100;
     int r = 255;
     int g = 0;
     int b = 0;
-    int a = 255;
 
     for (int i = y - h / 2; i < y + h / 2; i++)
     {
@@ -74,7 +73,24 @@ rgba** createTestImage(rgba** ref, int width, int height)
             image[i][j].red = r;
             image[i][j].green = g;
             image[i][j].blue = b;
-            image[i][j].alpha = a;
+        }
+    }
+
+    // rectangle at the upper left corner
+    x = 50;
+    y = 50;
+    w = 100;
+    h = 100;
+    r = 0;
+    g = 255;
+    b = 0;
+    for (int i = y - h / 2; i < y + h / 2; i++)
+    {
+        for (int j = x - w / 2; j < x + w / 2; j++)
+        {
+            image[i][j].red = r;
+            image[i][j].green = g;
+            image[i][j].blue = b;
         }
     }
     return image;
@@ -232,8 +248,8 @@ void testLabelComponents(rgba** image, rgba* imageGPU, int width, int height)
 
 int main()
 {
-    int width = 10;
-    int height = 10;
+    int width = 1000;
+    int height = 1000;
 
     rgba** ref = createRefImage(width, height);
     rgba** image = createTestImage(ref, width, height);
@@ -264,12 +280,12 @@ int main()
     saveImage("test_image_diff.png", image, width, height);
     saveImageGPU("test_image_diff_gpu.png", imageGPU, width, height);
     
-    testDilation(image, imageGPU, 1, width, height);
+    testDilation(image, imageGPU, 10, width, height);
 
     saveImage("test_image_dilation.png", image, width, height);
     saveImageGPU("test_image_dilation_gpu.png", imageGPU, width, height);
     
-    testErosion(image, imageGPU, 1, width, height);
+    testErosion(image, imageGPU, 10, width, height);
 
     saveImage("test_image_erosion.png", image, width, height);
     saveImageGPU("test_image_erosion_gpu.png", imageGPU, width, height);
