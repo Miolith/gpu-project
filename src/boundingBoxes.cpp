@@ -147,8 +147,6 @@ boxMap findBoundingBoxes(char *reference, int count, char **images, int device)
     return boxes;
 }
 
-
-
 // function to print the bounding boxes in json format
 void printBoundingBoxes(boxMap boxes)
 {
