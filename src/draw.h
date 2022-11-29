@@ -1,10 +1,14 @@
 #pragma once
 
+#define DEBUG false
+
 #include <map>
 #include <string>
 #include <vector>
 #include <set>
 
+#define GPU 1
+#define CPU 0
 
 struct rgba
 {
@@ -18,6 +22,14 @@ using boxList = std::vector<std::vector<int>>;
 using boxMap = std::map<std::string, boxList>;
 
 using namespace std;
+
+boxList findBox(rgba** ref, int w, int h, char *image);
+boxList findBoxGPU(rgba* ref, int w, int h, char *image);
+rgba** loadReference(char *filename, int *width, int *height);
+rgba* loadReferenceGPU(char *filename, int *width, int *height);
+boxMap findBoundingBoxes(char *reference, int count, char **images, int device);
+void printBoundingBoxes(boxMap boxes);
+
 
 void imageDiff(rgba **imageRef, rgba **imageOther, int width, int height);
 
