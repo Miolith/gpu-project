@@ -13,6 +13,12 @@ SRC_BNCH=$(wildcard bench/*.cpp\
 		  src/*.cu)
 SRC_BENCH_1=$(subst src/main.cu,,${SRC_BNCH})
 SRC_BENCH=$(subst test/test.cu,,${SRC_BENCH_1})
+SRC_FBNCH=$(wildcard func_bench/*.cpp\
+		  test/*.cpp test/*.cu\
+		  src/*.cpp\
+		  src/*.cu)
+SRC_FBENCH_1=$(subst src/main.cu,,${SRC_FBNCH})
+SRC_FBENCH=$(subst test/test.cu,,${SRC_FBENCH_1})
 
 OBJ_1 = $(SRC:.cpp=.o)
 OBJ = $(OBJ_1:.cu=.o)
@@ -20,7 +26,8 @@ OBJ_TST_1 = $(SRC_TEST:.cpp=.o)
 OBJ_TST = $(OBJ_TST_1:.cu=.o)
 OBJ_BENCH_1 = $(SRC_BENCH:.cpp=.o)
 OBJ_BENCH = $(OBJ_BENCH_1:.cu=.o)
-
+OBJ_FBENCH_1 = $(SRC_FBENCH:.cpp=.o)
+OBJ_FBENCH = $(OBJ_FBENCH_1:.cu=.o)
 .PHONY: test clean all testdebug $(EXEC_NAME) bench
 
 # Check System for OSX Comptability Support
@@ -65,6 +72,17 @@ else # Other
 	$(CC) $(OBJ_BENCH) $(CPPFLAGS) -o benchmark
 endif
 	./benchmark
+
+func_bench: CPPFLAGS += -O2 \
+	-Lbenchmark/build/src -lbenchmark -lpthread
+func_bench: $(OBJ_FBENCH)
+ifeq ($(OS),Darwin) # OSX
+	$(CC) $(OBJ_FBENCH) $(COMPFLAGS) $(CPPFLAGS) -o benchmark
+else # Other
+	$(CC) $(OBJ_FBENCH) $(CPPFLAGS) -o benchmark
+endif
+	./benchmark
+
 
 
 %.o: %.cpp
