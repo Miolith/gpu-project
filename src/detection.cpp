@@ -62,7 +62,7 @@ void show_componentsGPU(rgba *img, vector<vector<size_t>> labelTable, int width,
 }
 std::vector<std::vector<int>>
 component_box_detection(vector<vector<int>> components, int width, int height,
-                        set<int> &labelSet)
+                        set<int> &labelSet, int peaks)
 {
     std::vector<vector<int>> results;
     for (auto i : labelSet)
@@ -82,14 +82,15 @@ component_box_detection(vector<vector<int>> components, int width, int height,
             }
         }
         std::vector<int> out({ Xmin, Ymin, Xmax - Xmin, Ymax - Ymin });
-        results.push_back(out);
+        if (out[2] >= peaks && out[3] >= peaks)
+                results.push_back(out);
     }
     return results;
 }
 
 std::vector<std::vector<int>>
 component_box_detectionGPU(vector<vector<size_t>> components, int width, int height,
-                        set<size_t> &labelSet)
+                        set<size_t> &labelSet, int peaks)
 {
     std::vector<vector<int>> results;
     for (auto &i : labelSet)
@@ -109,7 +110,8 @@ component_box_detectionGPU(vector<vector<size_t>> components, int width, int hei
             }
         }
         std::vector<int> out({ Xmin, Ymin, Xmax - Xmin, Ymax - Ymin });
-        results.push_back(out);
+        if (out[2] >= peaks && out[3] >= peaks)
+                results.push_back(out);
     }
     return results;
 }

@@ -53,7 +53,7 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width, set<int>
 
 std::vector<std::vector<int>>
 component_box_detection(vector<vector<int>> components, int width, int height,
-                        set<int> &labelSet);
+                        set<int> &labelSet, int peaks=30);
 
 void show_components(rgba** img, vector<vector<int>> comp, int width, int height, set<int> &labelSet);
 
@@ -87,4 +87,4 @@ void show_componentsGPU(rgba *img, vector<vector<size_t>> labelTable, int width,
 
 vector<vector<int>>
 component_box_detectionGPU(vector<vector<size_t>> components, int width, int height,
-                        set<size_t> &labelSet);
+                        set<size_t> &labelSet, int peaks=30);
