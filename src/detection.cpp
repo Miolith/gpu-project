@@ -3,13 +3,11 @@
 #include <iostream>
 #include <set>
 
-#include "CImg.h"
 #include "color.hh"
 #include "draw.h"
 #include "tools.h"
 
 using namespace std;
-using namespace cimg_library;
 
 void show_components(rgba **img, vector<vector<int>> comp, int width,
                      int height, set<int> &labelSet)
