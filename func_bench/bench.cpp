@@ -9,97 +9,258 @@
 constexpr int width = 1200;
 constexpr int height = 800;
 
-
-void findBoxGPUBench(benchmark::State& st)
+// test each pipeline step
+void BM_GrayScale_cpu(benchmark::State& st)
 {
-    st.PauseTiming();
-    vector<int> func_call_count = {0,0,0,0,0,0,0,0,0,0,0};
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    for (auto _ : st)
+        grayScale(image, width, height);
 
-    char img_ref[] = "images/001.jpg";
-    char img_test[] = "images/059.jpg";
-    vector<char*> data = {img_test};
-    char *reference = img_ref;
-    int count = data.size();
-    char **images = data.data();
-    boxMap boxes;
-    int h, w;
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+}
 
-    rgba* refGPU;
-    refGPU = loadReferenceGPU(reference, &w, &h);
-    rgba* ref = refGPU;
-    st.ResumeTiming();
+void BM_GaussianBlur_cpu(benchmark::State& st)
+{
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    grayScale(image, width, height);
+    for (auto _ : st)
+        gaussianBlur(image, width, height);
+
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+}
+
+void BM_Dilation_cpu(benchmark::State& st)
+{
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    for (auto _ : st)
+        dilation(image, height, width, 10);
+
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+}
+
+void BM_Erosion_cpu(benchmark::State& st)
+{
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    for (auto _ : st)
+        erosion(image, height, width, 10);
+
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+}
+
+void BM_Threshold_cpu(benchmark::State& st)
+{
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    for (auto _ : st)
+        basic_threshold(image, height, width, 100);
+
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+}
+
+// component labeling
+void BM_ComponentLabeling_cpu(benchmark::State& st)
+{
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    
+    grayScale(image, width, height);
+    gaussianBlur(image, width, height);
+    dilation(image, height, width, 5);
+    erosion(image, height, width, 1);
+    basic_threshold(image, height, width, 70);
+
     for (auto _ : st)
     {
-        for(int i = 0; i < count; i++)
-        {
-                boxList box;
-                int width, height;
-
-                rgba *img = loadImageGPU(images[i], &width, &height);
-                func_call_count[0] += 1;
-
-                grayScaleGPU(img, width, height);
-                func_call_count[1] += 1;
-
-                gaussianBlurGPU(img, width, height);
-                func_call_count[2] += 1;
-
-                imageDiffGPU(ref, img, width, height);
-                func_call_count[3] += 1;
-
-                // CLOSING
-                dilationGPU(img, width, height, 20);
-                func_call_count[4] += 1;
-
-                erosionGPU(img, width, height, 20);
-                func_call_count[5] += 1;
-
-                // OPENING
-                erosionGPU(img, width, height, 50);
-                func_call_count[5] += 1;
-
-                dilationGPU(img, width, height, 50);
-                func_call_count[4] += 1;
-
-                basicThresholdGPU(img, height, width, 70);
-                func_call_count[6] += 1;
-
-                set<size_t> label_list;
-                vector<vector<size_t>> labels = connectCompenentGPU(img, height, width, label_list);
-                func_call_count[7] += 1;
-                show_componentsGPU(img, labels, width, height, label_list);
-                func_call_count[8] += 1;
-
-                for(auto boxe: component_box_detectionGPU(labels, width, height, label_list))
-                {
-                    box.push_back(boxe);
-                    func_call_count[9] += 1;
-                }
-                unloadImageGPU(img);
-                func_call_count[10] += 1;
-                unloadImageGPU(ref);
-                func_call_count[10] += 1;
-
-                boxes[images[i]] = box;
-        }
+        set<int> labels;
+        connectCompenent(image, height, width, labels);
     }
 
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+}
 
-    st.counters["\nloadImageGPU"] = benchmark::Counter(func_call_count[0], benchmark::Counter::kIsRate);
-    st.counters["\ngrayScaleGPU"] = benchmark::Counter(func_call_count[1], benchmark::Counter::kIsRate);
-    st.counters["\ngaussianBlurGPU"] = benchmark::Counter(func_call_count[2], benchmark::Counter::kIsRate);
-    st.counters["\nimageDiffGPU"] = benchmark::Counter(func_call_count[3], benchmark::Counter::kIsRate);
-    st.counters["\ndilationGPU"] = benchmark::Counter(func_call_count[4], benchmark::Counter::kIsRate);
-    st.counters["\nerosionGPU"] = benchmark::Counter(func_call_count[5], benchmark::Counter::kIsRate);
-    st.counters["\nbasicThresholdGPU"] = benchmark::Counter(func_call_count[6], benchmark::Counter::kIsRate);
-    st.counters["\nconnectCompenentGPU"] = benchmark::Counter(func_call_count[7], benchmark::Counter::kIsRate);
-    st.counters["\nshow_componentsGPU"] = benchmark::Counter(func_call_count[8], benchmark::Counter::kIsRate);
-    st.counters["\ncomponent_box_detectionGPU"] = benchmark::Counter(func_call_count[9], benchmark::Counter::kIsRate);
-    st.counters["\nunloadImageGPU"] = benchmark::Counter(func_call_count[10], benchmark::Counter::kIsRate);
+void BM_GrayScale_gpu(benchmark::State& st)
+{
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    rgba** imageCopy = copyImage(image, width, height);
+    rgba* imageGPU = flattenImageGPU(imageCopy, width, height);
+    rgba* refGPU = flattenImageGPU(ref, width, height);
+    for (auto _ : st)
+        grayScaleGPU(imageGPU, width, height);
+
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+    unloadImage(imageCopy, height);
+    unloadImageGPU(imageGPU);
+    unloadImageGPU(refGPU);
+}
+
+void BM_GaussianBlur_gpu(benchmark::State& st)
+{
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    rgba** imageCopy = copyImage(image, width, height);
+    rgba* imageGPU = flattenImageGPU(imageCopy, width, height);
+    rgba* refGPU = flattenImageGPU(ref, width, height);
+    grayScaleGPU(imageGPU, width, height);
+    for (auto _ : st)
+        gaussianBlurGPU(imageGPU, width, height);
+
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+    unloadImage(imageCopy, height);
+    unloadImageGPU(imageGPU);
+    unloadImageGPU(refGPU);
+}
+
+void BM_Dilation_gpu(benchmark::State& st)
+{
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    rgba** imageCopy = copyImage(image, width, height);
+    rgba* imageGPU = flattenImageGPU(imageCopy, width, height);
+    rgba* refGPU = flattenImageGPU(ref, width, height);
+    for (auto _ : st)
+        dilationGPU(imageGPU, width, height, 10);
+
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+    unloadImage(imageCopy, height);
+    unloadImageGPU(imageGPU);
+    unloadImageGPU(refGPU);
+}
+
+void BM_Erosion_gpu(benchmark::State& st)
+{
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    rgba** imageCopy = copyImage(image, width, height);
+    rgba* imageGPU = flattenImageGPU(imageCopy, width, height);
+    rgba* refGPU = flattenImageGPU(ref, width, height);
+    for (auto _ : st)
+        erosionGPU(imageGPU, height, width, 10);
+
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+    unloadImage(imageCopy, height);
+    unloadImageGPU(imageGPU);
+    unloadImageGPU(refGPU);
+}
+
+void BM_Threshold_gpu(benchmark::State& st)
+{
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    rgba** imageCopy = copyImage(image, width, height);
+    rgba* imageGPU = flattenImageGPU(imageCopy, width, height);
+    rgba* refGPU = flattenImageGPU(ref, width, height);
+    for (auto _ : st)
+        basicThresholdGPU(imageGPU, height, width, 100);
+
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+    unloadImage(imageCopy, height);
+    unloadImageGPU(imageGPU);
+    unloadImageGPU(refGPU);
+}
+
+// component labeling
+void BM_ComponentLabeling_gpu(benchmark::State& st)
+{
+    rgba** ref = createRefImage(width, height);
+    rgba** image = createTestImage(ref, width, height);
+    rgba** imageCopy = copyImage(image, width, height);
+    rgba* imageGPU = flattenImageGPU(imageCopy, width, height);
+    rgba* refGPU = flattenImageGPU(ref, width, height);
+
+
+    grayScaleGPU(imageGPU, width, height);
+    gaussianBlurGPU(imageGPU, width, height);
+    imageDiffGPU(imageGPU, refGPU, width, height);
+    dilationGPU(imageGPU, height, width, 5);
+    erosionGPU(imageGPU, width, height, 5);
+    basicThresholdGPU(imageGPU, height, width, 70);
+    for (auto _ : st)
+    {
+        set<size_t> labels;
+        connectCompenentGPU(imageGPU, height, width, labels);
+    }
+
+    st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+    unloadImage(image, height);
+    unloadImage(ref, height);
+    unloadImage(imageCopy, height);
+    unloadImageGPU(imageGPU);
+    unloadImageGPU(refGPU);
 }
 
 
-BENCHMARK(findBoxGPUBench)
+BENCHMARK(BM_GrayScale_cpu)
+->Unit(benchmark::kMillisecond)
+->UseRealTime();
+
+BENCHMARK(BM_GaussianBlur_cpu)
+->Unit(benchmark::kMillisecond)
+->UseRealTime();
+
+BENCHMARK(BM_Dilation_cpu)
+->Unit(benchmark::kMillisecond)
+->UseRealTime();
+
+BENCHMARK(BM_Erosion_cpu)
+->Unit(benchmark::kMillisecond)
+->UseRealTime();
+
+BENCHMARK(BM_Threshold_cpu)
+->Unit(benchmark::kMillisecond)
+->UseRealTime();
+
+BENCHMARK(BM_ComponentLabeling_cpu)
+->Unit(benchmark::kMillisecond)
+->UseRealTime();
+
+BENCHMARK(BM_GrayScale_gpu)
+->Unit(benchmark::kMillisecond)
+->UseRealTime();
+
+BENCHMARK(BM_GaussianBlur_gpu)
+->Unit(benchmark::kMillisecond)
+->UseRealTime();
+
+BENCHMARK(BM_Dilation_gpu)
+->Unit(benchmark::kMillisecond)
+->UseRealTime();
+
+BENCHMARK(BM_Erosion_gpu)
+->Unit(benchmark::kMillisecond)
+->UseRealTime();
+
+BENCHMARK(BM_Threshold_gpu)
+->Unit(benchmark::kMillisecond)
+->UseRealTime();
+
+BENCHMARK(BM_ComponentLabeling_gpu)
 ->Unit(benchmark::kMillisecond)
 ->UseRealTime();
 
