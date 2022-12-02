@@ -3,12 +3,10 @@
 #include <iostream>
 #include <set>
 
-#include "CImg.h"
 #include "draw.h"
 #include "tools.h"
 
 using namespace std;
-using namespace cimg_library;
 
 /*
  * Absolute substraction between imageRef and imageOther

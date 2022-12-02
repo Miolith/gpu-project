@@ -2,62 +2,70 @@
 #include <assert.h>
 #include <iostream>
 
-#include "CImg.h"
 #include "draw.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image.h"
+#include "stb_image_write.h"
+
 using namespace std;
-using namespace cimg_library;
 
 rgba **loadImage(const string &filename, int *width, int *height)
 {
-    // load the image from path into the rgba array
-    CImg<unsigned char> src(filename.c_str());
-    *width = src.width();
-    *height = src.height();
-
-    rgba **image = new rgba *[*height];
-
-    for (int i = 0; i < *height; i++)
+    int x, y, n;
+    unsigned char *data = stbi_load(filename.c_str(), &x, &y, &n, 4);
+    if (data == NULL)
     {
-        image[i] = new rgba[*width];
-        for (int j = 0; j < *width; j++)
+        cout << "Error: " << stbi_failure_reason() << endl;
+        exit(1);
+    }
+    *width = x;
+    *height = y;
+    rgba **img = new rgba*[y];
+
+    for (int i = 0; i < y; i++)
+    {
+        img[i] = new rgba[x];
+        for (int j = 0; j < x; j++)
         {
-            uint8_t *fields[4] = { &image[i][j].red, &image[i][j].green,
-                                   &image[i][j].blue, &image[i][j].alpha };
-            image[i][j].alpha = 255;
-            for (int spec = 0; spec < src.spectrum(); spec++)
-            {
-                *(fields[spec]) = src(j, i, 0, spec);
-            }
+            img[i][j].red = data[(i * x + j) * 4];
+            img[i][j].green = data[(i * x + j) * 4 + 1];
+            img[i][j].blue = data[(i * x + j) * 4 + 2];
+            img[i][j].alpha = data[(i * x + j) * 4 + 3];
         }
     }
-    return image;
+    stbi_image_free(data);
+    return img;
 }
 
 
 rgba *loadImageGPU(const string &filename, int *width, int *height)
 {
     // load the image from path into the rgba array
-    CImg<unsigned char> src(filename.c_str());
-    *width = src.width();
-    *height = src.height();
-
-    rgba* image = new rgba[*height * *width];
-
-    for (int i = 0; i < *height; i++)
+    int x, y, n;
+    unsigned char *data = stbi_load(filename.c_str(), &x, &y, &n, 4);
+    if (data == NULL)
     {
-        for (int j = 0; j < *width; j++)
+        cout << "Error: " << stbi_failure_reason() << endl;
+        exit(1);
+    }
+    *width = x;
+    *height = y;
+    rgba *img = new rgba[x * y];
+
+    for (int i = 0; i < y; i++)
+    {
+        for (int j = 0; j < x; j++)
         {
-            uint8_t *fields[4] = { &image[i * *width + j].red, &image[i * *width + j].green,
-                                   &image[i * *width + j].blue, &image[i * *width + j].alpha };
-            image[i * *width + j].alpha = 255;
-            for (int spec = 0; spec < src.spectrum(); spec++)
-            {
-                *(fields[spec]) = src(j, i, 0, spec);
-            }
+            img[i * x + j].red = data[(i * x + j) * 4];
+            img[i * x + j].green = data[(i * x + j) * 4 + 1];
+            img[i * x + j].blue = data[(i * x + j) * 4 + 2];
+            img[i * x + j].alpha = data[(i * x + j) * 4 + 3];
         }
     }
-    return image;
+    stbi_image_free(data);
+    return img;
 }
 
 void unloadImage(rgba **image, int height)
@@ -78,38 +86,36 @@ void unloadImageGPU(rgba *image)
 // save image to file
 void saveImage(const string &filename, rgba **image, int width, int height)
 {
-    CImg<unsigned char> dest(width, height, 1, 4);
+    unsigned char *data = new unsigned char[width * height * 4];
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
-            uint8_t *fields[4] = { &image[i][j].red, &image[i][j].green,
-                                   &image[i][j].blue, &image[i][j].alpha };
-            for (int spec = 0; spec < dest.spectrum(); spec++)
-            {
-                dest(j, i, 0, spec) = *(fields[spec]);
-            }
+            data[(i * width + j) * 4] = image[i][j].red;
+            data[(i * width + j) * 4 + 1] = image[i][j].green;
+            data[(i * width + j) * 4 + 2] = image[i][j].blue;
+            data[(i * width + j) * 4 + 3] = image[i][j].alpha;
         }
     }
-    dest.save(filename.c_str());
+    stbi_write_png(filename.c_str(), width, height, 4, data, width * 4);
+    delete[] data;
 }
 
 void saveImageGPU(const string &filename, rgba *image, int width, int height)
 {
-    CImg<unsigned char> dest(width, height, 1, 4);
+    unsigned char *data = new unsigned char[width * height * 4];
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
-            uint8_t *fields[4] = { &image[i * width + j].red, &image[i * width + j].green,
-                                   &image[i * width + j].blue, &image[i * width + j].alpha };
-            for (int spec = 0; spec < dest.spectrum(); spec++)
-            {
-                dest(j, i, 0, spec) = *(fields[spec]);
-            }
+            data[(i * width + j) * 4] = image[i * width + j].red;
+            data[(i * width + j) * 4 + 1] = image[i * width + j].green;
+            data[(i * width + j) * 4 + 2] = image[i * width + j].blue;
+            data[(i * width + j) * 4 + 3] = image[i * width + j].alpha;
         }
     }
-    dest.save(filename.c_str());
+    stbi_write_png(filename.c_str(), width, height, 4, data, width * 4);
+    delete[] data;
 }
 
 rgba* flattenImageGPU(rgba** image, int width, int height)

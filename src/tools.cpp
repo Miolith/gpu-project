@@ -2,11 +2,9 @@
 #include <assert.h>
 #include <iostream>
 
-#include "CImg.h"
 #include "draw.h"
 
 using namespace std;
-using namespace cimg_library;
 
 bool **getCircleTable(int diameter)
 {

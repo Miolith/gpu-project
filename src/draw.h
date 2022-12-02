@@ -1,10 +1,14 @@
 #pragma once
 
+#define DEBUG false
+
 #include <map>
 #include <string>
 #include <vector>
 #include <set>
 
+#define GPU 1
+#define CPU 0
 
 struct rgba
 {
@@ -17,9 +21,14 @@ struct rgba
 using boxList = std::vector<std::vector<int>>;
 using boxMap = std::map<std::string, boxList>;
 
-
 using namespace std;
-using namespace cimg_library;
+
+boxList findBox(rgba** ref, int w, int h, char *image);
+boxList findBoxGPU(rgba* ref, int w, int h, char *image);
+rgba** loadReference(char *filename, int *width, int *height);
+rgba* loadReferenceGPU(char *filename, int *width, int *height);
+boxMap findBoundingBoxes(char *reference, int count, char **images, int device);
+void printBoundingBoxes(boxMap boxes);
 
 
 void imageDiff(rgba **imageRef, rgba **imageOther, int width, int height);
@@ -44,7 +53,7 @@ vector<vector<int>> connectCompenent(rgba** img, int height, int width, set<int>
 
 std::vector<std::vector<int>>
 component_box_detection(vector<vector<int>> components, int width, int height,
-                        set<int> &labelSet);
+                        set<int> &labelSet, int peaks=30);
 
 void show_components(rgba** img, vector<vector<int>> comp, int width, int height, set<int> &labelSet);
 
@@ -71,3 +80,11 @@ void erosionGPU(rgba *image, int width, int height, int precision);
 void basicThresholdGPU(rgba *image, int height, int width, uint8_t threshold);
 
 vector<vector<size_t>> connectCompenentGPU(rgba* img, int height, int width, set<size_t> &labelSet);
+
+
+void show_componentsGPU(rgba *img, vector<vector<size_t>> labelTable, int width,
+                     int height, set<size_t> &labelSet);
+
+vector<vector<int>>
+component_box_detectionGPU(vector<vector<size_t>> components, int width, int height,
+                        set<size_t> &labelSet, int peaks=30);
