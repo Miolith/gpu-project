@@ -52,7 +52,6 @@ boxList findBox(rgba** ref, int w, int h, char *image)
         box.push_back(boxe);
     }
     unloadImage(img, height);
-    unloadImage(ref, h);
 
     return box;
 }
@@ -97,7 +96,6 @@ boxList findBoxGPU(rgba* ref, int w, int h, char *image)
         box.push_back(boxe);
     }
     unloadImageGPU(img);
-    unloadImageGPU(ref);
 
     return box;
 }
@@ -144,6 +142,10 @@ boxMap findBoundingBoxes(char *reference, int count, char **images, int device)
             boxes[images[i]] = findBox(ref, w, h, images[i]);
         }
     }
+    if(device == CPU)
+        unloadImage(ref, h);
+    else
+        unloadImageGPU(refGPU);
     return boxes;
 }
 

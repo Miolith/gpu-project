@@ -37,6 +37,10 @@ void show_components(rgba **img, vector<vector<int>> comp, int width,
 void show_componentsGPU(rgba *img, vector<vector<size_t>> labelTable, int width,
                      int height, set<size_t> &labelSet)
 {
+    if(labelSet.size() == 0)
+    {
+            return;
+    }
     int slice = 300 / (labelSet.size());
     HSL rainbow(100, 1, 0.5);
     int num = 1;
